@@ -91,6 +91,13 @@
                 icon-class="check"
                 @click.prevent="submitFunc(validate)"
               />
+              <ac-button
+                      title="Submit"
+                      class="ml-10"
+                      :is-loader-active="isLoading"
+                      icon-class="send"
+                      @click.prevent="submitData(validate)"
+              />
             </template>
           </vue-openapi-form>
         </div>
@@ -170,6 +177,24 @@ export default defineComponent({
       const { valid } = await validate();
       if (valid) {
         console.log('form is valid');
+      } else {
+        console.log('form is invalid');
+      }
+      this.isLoading = false;
+    },
+    async submitData(validate) {
+      this.isLoading = true;
+      const { valid } = await validate();
+      if (valid) {
+        try {
+          const response = await this.$axios.post(
+            'http://localhost:3003/v1/measurement',
+            this.model
+          );
+          console.log('Form submitted successfully:', response.data);
+        } catch (error) {
+          console.error('Error submitting form:', error);
+        }
       } else {
         console.log('form is invalid');
       }
