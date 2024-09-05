@@ -2,23 +2,35 @@
   <v-form ref="v-form" v-slot="{ meta, validate, errors }" as="">
     <ac-form>
       <div class="vue-openapi-form pl-20" :class="{ 'is-medium': size === 'medium' }">
+        <!-- Dynamisches Rendering von Feldern basierend auf dem Schema -->
         <v-field
+          v-for="(property, key) in extendedSchema.properties"
+          :key="key"
           v-slot="{ field, handleChange }"
-          v-model="modelData"
-          :name="extendedSchema.title"
-          :label="extendedSchema.title"
+          v-model="modelData[key]"
+          :name="key"
+          :label="key"
           :rules="ruleObject(true)"
           as=""
         >
+          <!-- Prüfen, ob es sich um ein Enum-Feld handelt -->
+          <DropdownEnum
+            v-if="property.enum"
+            v-model="modelData[key]"
+            :label="key"
+            :options="property.enum"
+          />
+          <!-- Standard-Input für andere Felder -->
           <object-form-wrapper
-            field-name="$"
-            :model-value="field.value"
+            v-else
+            :field-name="key"
+            :model-value="modelData[key]"
             :expand-form="true"
             :is-root="true"
             :level="1"
             :is-self-required="true"
             :only-json="onlyJson"
-            :schema="extendedSchema"
+            :schema="property"
             :reference-model="referenceModel || {}"
             :errors="errors"
             :showRootTab="true"
@@ -26,6 +38,7 @@
           />
         </v-field>
       </div>
+
       <template #form-left-controls>
         <form-footer-control>
           <slot
@@ -36,6 +49,7 @@
           />
         </form-footer-control>
       </template>
+
       <template #form-right-controls>
         <form-footer-control>
           <slot
@@ -55,6 +69,7 @@ import ExtendSchema from '../functional-components/extend-schema.js';
 import validation from '../mixins/validation.js';
 import { model } from '../mixins/model.js';
 import { defineAsyncComponent, defineComponent } from 'vue';
+import DropdownEnum from './DropdownEnum.vue';  
 
 export default defineComponent({
   name: 'VueOpenapiForm',
@@ -67,6 +82,7 @@ export default defineComponent({
         '@appscode/design-system/vue-components/v3/form/FormFooterControl.vue'
       )
     ),
+    DropdownEnum  
   },
   mixins: [model, validation],
   provide() {
@@ -112,7 +128,10 @@ export default defineComponent({
     extendedSchema() {
       return ExtendSchema(this.schema, this.formTitle);
     },
-  },
+    modelData() {
+      return this.modelValue;
+    }
+  }
 });
 </script>
 
