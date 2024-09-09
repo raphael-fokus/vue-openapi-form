@@ -30,6 +30,6 @@
   </script>
   
   <style scoped>
-  /* Add custom styling here */
+  
   </style>
   

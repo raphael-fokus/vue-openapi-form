@@ -34,7 +34,6 @@
     },
     methods: {
       fetchExecutions() {
-        // Fetch executions from the API
         this.$axios.get("http://localhost:3003/v1/execution")
           .then(response => {
             this.executions = response.data;
