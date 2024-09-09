@@ -2,33 +2,34 @@
   <div id="app">
     <div id="header" class="ac-navbar-area is-full is-fixed ml-0">
       <div class="ac-navbar-inner">
-        <!-- navbar start  -->
+        <!-- navbar start -->
         <nav class="ac-navbar">
-          <!-- navbar logo start  -->
+          <!-- Navbar brand logo -->
           <div class="ac-navbar-brand">
-            <a href="https://byte.builders/"
-              ><img
+            <a href="https://byte.builders/">
+              <img
                 src="https://cdn.appscode.com/images/products/bytebuilders/bytebuilders.png"
               />
             </a>
             <strong>(Vue OpenAPI Form)</strong>
           </div>
-          <!-- navbar logo end -->
 
-          <!-- navbar menus start  -->
+          <!-- Navigation buttons for Job Listing & Scheduling and Executions -->
           <div class="ac-navbar-menu">
-            <!-- single navbar menu item start  -->
+            <button class="button is-primary ml-10" @click="goToJobListing">
+              Job Listing & Scheduling
+            </button>
+            <button class="button is-secondary ml-10" @click="goToExecutionList">
+              Current/Past Executions
+            </button>
+
+            <!-- GitHub link -->
             <div class="ac-menu-item">
-              <a
-                href="https://github.com/appscode/vue-openapi-form"
-                class="button ac-nav-button"
-              >
+              <a href="https://github.com/appscode/vue-openapi-form" class="button ac-nav-button">
                 <i class="fa fa-github" aria-hidden="true"></i>
               </a>
             </div>
-            <!-- single navbar menu item end  -->
           </div>
-          <!-- navbar menus end -->
         </nav>
         <!-- navbar end -->
       </div>
@@ -92,11 +93,11 @@
                 @click.prevent="submitFunc(validate)"
               />
               <ac-button
-                      title="Submit"
-                      class="ml-10"
-                      :is-loader-active="isLoading"
-                      icon-class="send"
-                      @click.prevent="submitData(validate)"
+                title="Submit"
+                class="ml-10"
+                :is-loader-active="isLoading"
+                icon-class="send"
+                @click.prevent="submitData(validate)"
               />
             </template>
           </vue-openapi-form>
@@ -111,12 +112,14 @@
         />
       </div>
     </div>
+    <router-view />
   </div>
 </template>
 
 <script>
 import Schemas from '@/json-schema.js';
 import { defineAsyncComponent, defineComponent } from 'vue';
+import { useRouter } from 'vue-router'; 
 
 export default defineComponent({
   name: 'App',
@@ -131,7 +134,6 @@ export default defineComponent({
       import('@appscode/design-system/vue-components/v3/button/Button.vue')
     ),
   },
-
   data() {
     return {
       jsonSchemas: Schemas,
@@ -144,7 +146,22 @@ export default defineComponent({
       isLoading: false,
     };
   },
+  setup() {
+    const router = useRouter();
 
+    const goToJobListing = () => {
+      router.push({ name: 'JobListing' });
+    };
+
+    const goToExecutionList = () => {
+      router.push({ name: 'ExecutionList' });
+    };
+
+    return {
+      goToJobListing,
+      goToExecutionList,
+    };
+  },
   watch: {
     selectedJsonSchema: {
       deep: true,
@@ -159,7 +176,6 @@ export default defineComponent({
       },
     },
   },
-
   methods: {
     updateSchema(e) {
       this.modifiedSchema = true;
@@ -210,7 +226,6 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .ac-navbar-area {
-
   &.is-full {
     margin-left: 0;
 
@@ -227,7 +242,6 @@ export default defineComponent({
   .ac-navbar {
     display: inline-grid;
     grid-template-columns: auto auto;
-    // margin-left: 255px;
     grid-gap: 20px;
     align-items: center;
     width: 100%;
