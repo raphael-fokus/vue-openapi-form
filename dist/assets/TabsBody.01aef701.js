@@ -1,1 +1,0 @@
-import{b as a,o as s,c as o,j as t}from"./index.190f0c2b.js";const c={},r={class:"ac-tabs-body is-content-available"};function n(e,l){return s(),o("div",r,[t(e.$slots,"default")])}var _=a(c,[["render",n]]);export{_ as default};
