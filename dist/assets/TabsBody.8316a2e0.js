@@ -1,0 +1,1 @@
+import{_ as a,o as s,c as o,j as t}from"./index.eadbad00.js";const c={},r={class:"ac-tabs-body is-content-available"};function n(e,l){return s(),o("div",r,[t(e.$slots,"default")])}var d=a(c,[["render",n]]);export{d as default};
