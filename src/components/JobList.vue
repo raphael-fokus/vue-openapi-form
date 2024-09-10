@@ -1,6 +1,6 @@
 <template>
     <div>
-      <h2>Job Listing</h2>
+      <h2>Jobs</h2>
       <div v-if="jobs.length">
         <div v-for="job in jobs" :key="job.jobId" class="listEntry">
           {{ job.jobName }} 

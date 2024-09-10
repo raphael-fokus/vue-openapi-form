@@ -1,9 +1,9 @@
 <template>
     <div>
-      <h1>Execution List</h1>
+      <h1>Executions</h1>
       <execution-list />
   
-      <button @click="goToJobListing" class="button is-primary mt-20">Go to Job Listing & Scheduling</button>
+      <button @click="goToJobListing" class="button is-primary mt-20">Go to Jobs & Scheduling</button>
     </div>
   </template>
   
@@ -30,6 +30,6 @@
   </script>
   
   <style scoped>
-  
+
   </style>
   

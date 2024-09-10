@@ -17,7 +17,7 @@
           <!-- Navigation buttons for Job Listing & Scheduling and Executions -->
           <div class="ac-navbar-menu">
             <button class="button is-primary ml-10" @click="goToJobListing">
-              Job Listing & Scheduling
+              Jobs & Scheduling
             </button>
             <button class="button is-secondary ml-10" @click="goToExecutionList">
               Current/Past Executions

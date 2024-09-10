@@ -1,6 +1,6 @@
 <template>
     <div>
-      <h2>Execution List</h2>
+      <h2>Executions</h2>
       <div v-if="executions.length">
         <div v-for="exe in executions" :key="exe.executionId" class="listEntry">
           {{ new Date(exe.date).toISOString() }} - 

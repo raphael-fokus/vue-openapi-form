@@ -25,15 +25,21 @@ export default {
   },
   data() {
     return {
-      scheduledDate: new Date().toISOString().slice(0, 16)  // No seconds or timezone here, will fix later
+      scheduledDate: this.getLocalTimeInGMT2().toISOString().slice(0, 16),
     };
   },
   computed: {
     currentDateTime() {
-      return new Date().toISOString().slice(0, 16);  // No seconds or timezone here, will fix later
+      return this.getLocalTimeInGMT2().toISOString().slice(0, 16);  
     }
   },
   methods: {
+    getLocalTimeInGMT2() {
+      const currentDate = new Date();
+      const offset = 2 * 60;
+      const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
+      return localTime;
+    },
     cancelSchedule() {
       this.$emit('cancel-schedule');
     },
@@ -47,12 +53,11 @@ export default {
       this.$emit('execute-job', scheduleData);
     },
     formatScheduledDate(scheduledDate) {
-      // Add ":00" for seconds and "Z" for UTC timezone
       if (!scheduledDate.includes(':00')) {
         scheduledDate += ':00';
       }
       if (!scheduledDate.includes('Z')) {
-        scheduledDate += 'Z';  // Assumes UTC
+        scheduledDate += 'Z';  
       }
       return scheduledDate;
     }
