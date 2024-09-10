@@ -13,8 +13,9 @@ registerValidationRules();
 
 const app = createApp(App);
 
-// Axios global 
+
 app.config.globalProperties.$axios = axios;
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 app.use(router) 
    .use(store)

@@ -1,16 +1,19 @@
 <template>
-  <div v-if="selectedJob">
+  <div v-if="selectedJob" class="scheduling-container">
     <h2>Scheduling Job</h2>
-    <div>
-      <p>Job: {{ selectedJob.jobName }} <i>({{ selectedJob.jobId }})</i></p>
-      <p>Assigned Workers: 
+    <div class="scheduling-details">
+      <p><strong>Job:</strong> {{ selectedJob.jobName }} <i>({{ selectedJob.jobId }})</i></p>
+      <p><strong>Assigned Workers:</strong> 
         <span v-for="task in selectedJob.tasks" :key="task.worker.workerId">
           {{ task.worker.workerType }} - {{ task.worker.workerName || 'Unassigned' }}
+          <span v-if="!isLastTask(task, selectedJob.tasks)">, </span>
         </span>
       </p>
-      <input type="datetime-local" v-model="scheduledDate" :min="currentDateTime" />
-      <button @click="cancelSchedule" class="button is-danger">Cancel Schedule</button>
-      <button @click="executeJob" class="button is-primary ml-10">Schedule/Execute Job</button>
+      <input type="datetime-local" v-model="scheduledDate" :min="currentDateTime" class="input is-primary" />
+      <div class="scheduling-actions">
+        <button @click="cancelSchedule" class="button is-danger">Cancel Schedule</button>
+        <button @click="executeJob" class="button is-primary ml-10">Schedule/Execute Job</button>
+      </div>
     </div>
   </div>
 </template>
@@ -60,11 +63,35 @@ export default {
         scheduledDate += 'Z';  
       }
       return scheduledDate;
+    },
+    isLastTask(task, tasks) {
+      return tasks.indexOf(task) === tasks.length - 1;
     }
   }
 };
 </script>
 
 <style scoped>
+.scheduling-container {
+  margin: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
 
+.scheduling-details {
+  margin-bottom: 20px;
+}
+
+.input.is-primary {
+  margin: 10px 0;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.scheduling-actions {
+  margin-top: 20px;
+}
 </style>

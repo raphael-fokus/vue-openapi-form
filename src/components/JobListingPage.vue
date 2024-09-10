@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h1>Job Listing & Scheduling</h1>
+  <div class="job-listing-container">
+    <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
     <scheduling-area
       v-if="selectedJob"
@@ -14,8 +14,10 @@
       @assign-worker="assignWorker"
     />
 
-    <button @click="goToExecutionList" class="button is-primary mt-20">
-      Go to Execution List
+    <!-- Button with an icon pointing to Execution List -->
+    <button @click="goToExecutionList" class="icon-button">
+      <i class="fa fa-arrow-right"></i>
+      <span class="tooltip">Current/Past Executions</span>
     </button>
   </div>
 </template>
@@ -35,7 +37,8 @@ export default {
   },
   data() {
     return {
-      selectedJob: null
+      selectedJob: null,
+      baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
   setup() {
@@ -66,6 +69,9 @@ export default {
         unassignedTask.worker.refSettingId = refSettingId;
       }
     },
+    refreshJobList() {
+      this.$refs.JobList.fetchJobs();
+    },
     async executeJob(scheduleData) {
       let { scheduledDate } = scheduleData;
       if (!scheduledDate) {
@@ -80,8 +86,7 @@ export default {
       };
 
       try {
-        
-        const response = await axios.post('http://localhost:3003/v1/execution', payload);
+        const response = await axios.post(`${this.baseUrl}/v1/execution`, payload);
         console.log('Job executed successfully:', response.data);
         alert('Job scheduled successfully');
         
@@ -96,5 +101,46 @@ export default {
 </script>
 
 <style scoped>
+.job-listing-container {
+  margin: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
 
+.icon-button {
+  position: relative;
+  background-color: #176bb5;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip {
+  position: absolute;
+  top: -30px;
+  right: 50px;
+  background-color: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
 </style>

@@ -112,7 +112,7 @@
         />
       </div>
     </div>
-    <router-view />
+    <router-view ref="jobListingPage"/>
   </div>
 </template>
 
@@ -144,6 +144,7 @@ export default defineComponent({
       formTitle: '',
       modifiedSchema: false,
       isLoading: false,
+      baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
   setup() {
@@ -204,10 +205,14 @@ export default defineComponent({
       if (valid) {
         try {
           const response = await this.$axios.post(
-            'http://localhost:3003/v1/measurement',
+            `${this.baseUrl}/v1/measurement`,
             this.model
           );
           console.log('Form submitted successfully:', response.data);
+          const jobListingPage = this.$refs.jobListingPage;
+          if (jobListingPage && jobListingPage.refreshJobList) {
+            jobListingPage.refreshJobList();
+          }
         } catch (error) {
           console.error('Error submitting form:', error);
         }
