@@ -2,16 +2,13 @@
   <div class="job-listing-container">
     <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
+    
+    <!-- Keep Scheduling Area with WorkerList embedded within it -->
     <scheduling-area
       v-if="selectedJob"
       :selected-job="selectedJob"
       @cancel-schedule="cancelSchedule"
       @execute-job="executeJob"
-    />
-    <worker-list
-      v-if="selectedJob"
-      :selected-job="selectedJob"
-      @assign-worker="assignWorker"
     />
 
     <!-- Button with an icon pointing to Execution List -->
@@ -24,15 +21,13 @@
 
 <script>
 import JobList from './JobList.vue';
-import WorkerList from './WorkerList.vue';
-import SchedulingArea from './SchedulingArea.vue';
+import SchedulingArea from './SchedulingArea.vue'; // Removed WorkerList
 import { useRouter } from 'vue-router';
 import axios from 'axios'; 
 
 export default {
   components: {
     JobList,
-    WorkerList,
     SchedulingArea
   },
   data() {
@@ -58,19 +53,6 @@ export default {
     },
     cancelSchedule() {
       this.selectedJob = null;
-    },
-    assignWorker({ worker, refSettingId }) {
-      const unassignedTask = this.selectedJob.tasks.find(
-        (t) => !t.worker.workerId && t.worker.workerType === worker.workerType
-      );
-      if (unassignedTask) {
-        unassignedTask.worker.workerId = worker.workerId;
-        unassignedTask.worker.workerName = worker.workerName;
-        unassignedTask.worker.refSettingId = refSettingId;
-      }
-    },
-    refreshJobList() {
-      this.$refs.JobList.fetchJobs();
     },
     async executeJob(scheduleData) {
       let { scheduledDate } = scheduleData;

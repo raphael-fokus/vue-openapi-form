@@ -4,7 +4,8 @@
     <div v-if="executions.length">
       <div v-for="exe in executions" :key="exe.executionId" class="listEntry">
         <div class="execution-details">
-          <p><strong>{{ new Date(exe.date).toISOString() }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})</p>
+          <!-- Use the same date format method from SchedulingArea.vue with GMT+2 -->
+          <p><strong>{{ formatScheduledDate(exe.date) }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})</p>
           <p><strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} / {{ exe.overallTasksSteps }}</p>
           <p><strong>Workers:</strong> 
             <span v-for="task in exe.job.tasks" :key="task.worker.workerId">
@@ -48,7 +49,7 @@ export default {
       removeExecution(executionId) {
         if (!confirm('Are you sure you want to remove this execution?')) return;
 
-        axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
+        this.$axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
           .then(() => {
             this.executions = this.executions.filter(exe => exe.executionId !== executionId);
             alert('Execution removed successfully');
@@ -59,6 +60,17 @@ export default {
       },
       isLastTask(task, tasks) {
         return tasks.indexOf(task) === tasks.length - 1;
+      },
+      // Get local time in GMT+2
+      getLocalTimeInGMT2() {
+        const currentDate = new Date();
+        const offset = 2 * 60;
+        const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
+        return localTime;
+      },
+      formatScheduledDate(scheduledDate) {
+        const localTime = this.getLocalTimeInGMT2();
+        return localTime.toISOString().slice(0, 16);
       }
     }
 };
@@ -98,4 +110,3 @@ export default {
   color: #666;
 }
 </style>
-

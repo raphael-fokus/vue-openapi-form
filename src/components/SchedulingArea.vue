@@ -10,23 +10,28 @@
           <span v-if="!isLastTask(index, selectedJob.tasks)">, </span>
         </span>
       </p>
-      <worker-list :selected-job="selectedJob" @assign-worker="handleWorkerAssignment" />
       <input type="datetime-local" v-model="scheduledDate" :min="currentDateTime" class="input is-primary" />
       <div class="scheduling-actions">
         <button @click="cancelSchedule" class="button is-danger">Cancel Schedule</button>
         <button @click="executeJob" class="button is-primary ml-10">Schedule/Execute Job</button>
       </div>
+      <worker-list :selected-job="selectedJob" @assign-worker="handleWorkerAssignment" />
     </div>
   </div>
 </template>
 
 <script>
+import WorkerList from './WorkerList.vue';
+
 export default {
   props: {
     selectedJob: {
       type: Object,
       required: true
     }
+  },
+  components: {
+    WorkerList 
   },
   data() {
     return {
