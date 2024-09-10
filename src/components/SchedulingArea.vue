@@ -4,11 +4,13 @@
     <div class="scheduling-details">
       <p><strong>Job:</strong> {{ selectedJob.jobName }} <i>({{ selectedJob.jobId }})</i></p>
       <p><strong>Assigned Workers:</strong> 
-        <span v-for="task in selectedJob.tasks" :key="task.worker.workerId">
-          {{ task.worker.workerType }} - {{ task.worker.workerName || 'Unassigned' }}
-          <span v-if="!isLastTask(task, selectedJob.tasks)">, </span>
+        <!-- Loop through the tasks to show worker type, action, and assigned worker or '?' -->
+        <span v-for="(task, index) in selectedJob.tasks" :key="index">
+          {{ task.worker.workerType }}/{{ task.action }}({{ task.worker.workerName || '?' }})
+          <span v-if="!isLastTask(index, selectedJob.tasks)">, </span>
         </span>
       </p>
+      <worker-list :selected-job="selectedJob" @assign-worker="handleWorkerAssignment" />
       <input type="datetime-local" v-model="scheduledDate" :min="currentDateTime" class="input is-primary" />
       <div class="scheduling-actions">
         <button @click="cancelSchedule" class="button is-danger">Cancel Schedule</button>
@@ -64,8 +66,24 @@ export default {
       }
       return scheduledDate;
     },
-    isLastTask(task, tasks) {
-      return tasks.indexOf(task) === tasks.length - 1;
+    isLastTask(index, tasks) {
+      return index === tasks.length - 1;
+    },
+    handleWorkerAssignment({ worker, refSettingId }) {
+      const unassignedTask = this.selectedJob.tasks.find(
+        (task) => !task.worker.workerId && task.worker.workerType === worker.workerType
+      );
+
+      if (!unassignedTask) {
+        alert(`No unassigned tasks for worker type ${worker.workerType}.`);
+        return;
+      }
+
+      unassignedTask.worker.workerId = worker.workerId;
+      unassignedTask.worker.workerName = worker.workerName;
+      unassignedTask.worker.refSettingId = refSettingId || "";
+
+      this.selectedJob.tasks = [...this.selectedJob.tasks];
     }
   }
 };

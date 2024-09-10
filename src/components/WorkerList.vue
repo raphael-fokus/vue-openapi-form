@@ -71,6 +71,12 @@ export default {
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
+  props: {
+    selectedJob: {
+      type: Object,
+      required: true
+    }
+  },
   mounted() {
     this.checkWorkerRegistration();
     this.fetchWorkers();
@@ -116,6 +122,14 @@ export default {
           localStorage.setItem("workerId", worker.workerId);
           this.registerButtonText = "Unregister";
           this.stateMessage = "Registered successfully!";
+          
+          // Add worker to the workers list and set as unconnected
+          this.workers.push({
+            workerId: worker.workerId,
+            workerType: worker.workerType,
+            workerName: worker.workerName,
+            connected: false // Initially not connected
+          });
         })
         .catch(error => {
           console.error("Error registering worker:", error);
@@ -133,6 +147,8 @@ export default {
           this.workerName = "";
           this.registerButtonText = "Register";
           this.stateMessage = "Unregistered successfully.";
+          
+          this.workers = this.workers.filter(worker => worker.workerId !== workerId);
         })
         .catch(error => {
           console.error("Error unregistering worker:", error);
@@ -148,7 +164,7 @@ export default {
           this.workerName = worker.workerName;
           this.workerId = worker.workerId;
           this.registerButtonText = "Unregister";
-          this.stateMessage = "Registered and connected.";
+          this.stateMessage = "Registered successfully.";
         })
         .catch(error => {
           console.error("Error fetching worker info:", error);
@@ -162,31 +178,65 @@ export default {
         return;
       }
 
-      const socket = new WebSocket(`ws://${location.host}/v1/connection?workerId=${this.workerId}`);
+      //const socket = new WebSocket(`ws://${location.host}/v1/connection?workerId=${this.workerId}`);
+      const socket = new WebSocket(`ws://${location.host.replace("3000", "3003")}/v1/connection?workerId=${this.workerId}`);
+
+
       socket.onopen = () => {
         this.connectButtonText = "Disconnect";
         this.stateMessage = "Connected successfully.";
+
+        // Update the connected status directly in the reactive workers array
+        const workerIndex = this.workers.findIndex(worker => worker.workerId === this.workerId);
+        if (workerIndex !== -1) {
+          this.workers[workerIndex].connected = true;
+        }
+
+        // Optionally re-fetch workers if the backend tracks connected status
+        this.fetchWorkers();
       };
+
       socket.onclose = () => {
         this.connectButtonText = "Connect";
         this.stateMessage = "Disconnected.";
+
+        // Update the worker's connected status on disconnection
+        const workerIndex = this.workers.findIndex(worker => worker.workerId === this.workerId);
+        if (workerIndex !== -1) {
+          this.workers[workerIndex].connected = false;
+        }
+
+        //this.fetchWorkers();
       };
+
       socket.onerror = () => {
         this.stateMessage = "Connection error.";
       };
     },
 
+
     assignWorker(worker) {
-      if (!this.selectedJob) {
-        alert('Please select a job first');
+      // Find the first unassigned task for this worker type in the selected job
+      const unassignedTask = this.selectedJob.tasks.find(
+        (task) => !task.worker.workerId && task.worker.workerType === worker.workerType
+      );
+
+      if (!unassignedTask) {
+        alert(`No unassigned tasks for worker type ${worker.workerType}.`);
         return;
       }
 
-      const refSettingId = this.refSetting[worker.workerId] || "";
-      this.$emit('assign-worker', { worker, refSettingId });
+      // Assign the worker to the unassigned task
+      unassignedTask.worker.workerId = worker.workerId;
+      unassignedTask.worker.workerName = worker.workerName;
+      unassignedTask.worker.refSettingId = this.refSetting[worker.workerId] || "";
+
+      // Emit the worker assignment to the parent component
+      this.$emit('assign-worker', { worker, refSettingId: this.refSetting[worker.workerId] });
+
     },
 
-    // Remove a worker from the list
+
     removeWorker(workerId) {
       if (confirm('Are you sure you want to remove this worker?')) {
         this.$axios.delete(`${this.baseUrl}/v1/registration/${workerId}`)

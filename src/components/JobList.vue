@@ -5,11 +5,11 @@
       <div v-for="job in jobs" :key="job.jobId" class="listEntry">
         <div class="job-details">
           <div class="job-info">
-            <strong>{{ job.jobName }}</strong> 
-            <i>({{ job.jobId }})</i>
+            <span class="job-name"><strong>{{ job.jobName }}</strong></span>
+            <span class="job-id"><i>({{ job.jobId }})</i></span>
             <p>Contents: {{ job.streams.length }}, Tasks: {{ job.tasks.length }}</p>
             <p class="task-sequence">
-              Task Sequence: 
+              Task Sequence:
               <span v-for="task in job.tasks" :key="task.worker.workerId">
                 {{ task.worker.workerType }}/{{ task.action }}<span v-if="!isLastTask(task, job.tasks)">, </span>
               </span>
@@ -53,14 +53,14 @@ export default {
         });
     },
     scheduleJob(job) {
-      this.$emit('schedule-job', job); 
+      this.$emit('schedule-job', job);
     },
     removeJob(jobId) {
       if (confirm("Are you sure you want to remove this job?")) {
         this.$axios.delete(`${this.baseUrl}/v1/measurement/${jobId}`)
           .then(response => {
             alert('Job removed successfully.');
-            // Remove the job from the list after successful deletion
+            // Remove the job from the list
             this.jobs = this.jobs.filter(job => job.jobId !== jobId);
           })
           .catch(error => {
@@ -107,6 +107,10 @@ h2 {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+}
+
+.job-name {
+  margin-right: 5px; 
 }
 
 .job-info {
