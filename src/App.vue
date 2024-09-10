@@ -19,7 +19,7 @@
             <button class="button is-primary ml-10" @click="goToJobListing">
               Jobs & Scheduling
             </button>
-            <button class="button is-secondary ml-10" @click="goToExecutionList">
+            <button class="button is-primary ml-10" @click="goToExecutionList">
               Current/Past Executions
             </button>
 
