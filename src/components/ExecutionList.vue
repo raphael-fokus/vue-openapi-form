@@ -4,9 +4,14 @@
     <div v-if="executions.length">
       <div v-for="exe in executions" :key="exe.executionId" class="listEntry">
         <div class="execution-details">
-          <!-- Use the same date format method from SchedulingArea.vue with GMT+2 -->
           <p><strong>{{ formatScheduledDate(exe.date) }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})</p>
           <p><strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} / {{ exe.overallTasksSteps }}</p>
+          
+          <!-- Progress Bar for task execution -->
+          <div class="progress-bar">
+            <div class="progress" :style="{ width: getProgressPercentage(exe.currentTaskNo, exe.overallTasksSteps) }"></div>
+          </div>
+
           <p><strong>Workers:</strong> 
             <span v-for="task in exe.job.tasks" :key="task.worker.workerId">
               {{ task.worker.workerType }} - {{ task.worker.workerName }}
@@ -61,7 +66,6 @@ export default {
       isLastTask(task, tasks) {
         return tasks.indexOf(task) === tasks.length - 1;
       },
-      // Get local time in GMT+2
       getLocalTimeInGMT2() {
         const currentDate = new Date();
         const offset = 2 * 60;
@@ -71,6 +75,10 @@ export default {
       formatScheduledDate(scheduledDate) {
         const localTime = this.getLocalTimeInGMT2();
         return localTime.toISOString().slice(0, 16);
+      },
+      getProgressPercentage(currentTaskNo, overallTasksSteps) {
+        const percentage = (currentTaskNo / overallTasksSteps) * 100;
+        return `${percentage}%`;
       }
     }
 };
@@ -108,5 +116,21 @@ export default {
 .no-executions {
   text-align: center;
   color: #666;
+}
+
+.progress-bar {
+  background-color: #ddd;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.progress {
+  height: 100%;
+  background-color: #4caf50;
+  border-radius: 5px;
+  transition: width 0.5s;
 }
 </style>

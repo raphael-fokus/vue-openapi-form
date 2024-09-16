@@ -1,6 +1,7 @@
 <template>
   <div class="workers-container">
     <h2>Available Workers</h2>
+
     <!-- Legend for worker status -->
     <div class="worker-legend">
       <p>
@@ -9,27 +10,33 @@
       </p>
     </div>
 
-    <!-- List of Workers -->
-    <div v-if="workers.length">
-      <div v-for="worker in workers" :key="worker.workerId" class="listEntry">
-        <div class="worker-details">
-          <p>
-            <strong>{{ worker.workerType }}:</strong> {{ worker.workerName }}
-            <i>({{ worker.workerId }} {{ worker.connected ? '✔️' : '⚠️' }})</i>
-          </p>
-          <input type="text" v-model="refSetting[worker.workerId]" placeholder="refSettingId"
-            class="input is-primary" />
+    <!-- Draggable List of Workers -->
+    <draggable
+      v-if="workers.length"
+      v-model="workers"
+      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }"
+      item-key="workerId"
+      class="draggable-worker-list"
+    >
+      <template #item="{ element }">
+        <div class="listEntry" v-if="element.connected">
+          <div class="worker-details">
+            <p>
+              <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
+              <i>({{ element.workerId }} ✔️)</i>
+            </p>
+            <input type="text" v-model="refSetting[element.workerId]" placeholder="refSettingId" class="input is-primary" />
+          </div>
+          <div class="worker-actions">
+            <button @click="assignWorker(element)" class="button is-primary" :disabled="!element.connected">Assign</button>
+            <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">Remove</button>
+          </div>
         </div>
-        <div class="worker-actions">
-          <button @click="assignWorker(worker)" class="button is-primary" :disabled="!worker.connected">
-            Assign
-          </button>
-          <button @click="removeWorker(worker.workerId)" class="button is-danger ml-10">Remove</button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </draggable>
+
     <div v-else class="no-workers">
-      No workers available.
+      No connected workers available.
     </div>
 
     <!-- Worker Registration Form -->
@@ -37,8 +44,7 @@
       <h3>Register a Worker</h3>
       <div class="form-field">
         <label for="workerType"><strong>Worker Type:</strong></label>
-        <input id="workerType" v-model="newWorker.workerType" placeholder="PLAYER, MEASURING, etc."
-          class="input is-primary" />
+        <input id="workerType" v-model="newWorker.workerType" placeholder="PLAYER, MEASURING, etc." class="input is-primary" />
       </div>
       <div class="form-field">
         <label for="workerName"><strong>Worker Name:</strong></label>
@@ -58,7 +64,12 @@
 </template>
 
 <script>
+import draggable from 'vuedraggable';
+
 export default {
+  components: {
+    draggable,
+  },
   data() {
     return {
       workers: [],
@@ -78,6 +89,12 @@ export default {
     selectedJob: {
       type: Object,
       required: true
+    }
+  },
+  computed: {
+    // Only return connected workers to be draggable
+    connectedWorkers() {
+      return this.workers.filter(worker => worker.connected);
     }
   },
   mounted() {
@@ -175,12 +192,18 @@ export default {
         return;
       }
 
-      unassignedTask.worker.workerId = worker.workerId;
-      unassignedTask.worker.workerName = worker.workerName;
-      unassignedTask.worker.refSettingId = this.refSetting[worker.workerId] || "";
+      // Replace the worker object to ensure Vue detects the change
+      unassignedTask.worker = {
+        workerId: worker.workerId,
+        workerName: worker.workerName,
+        workerType: worker.workerType,
+        refSettingId: this.refSetting[worker.workerId] || ""
+      };
 
-      this.$emit('assign-worker', { worker, refSettingId: this.refSetting[worker.workerId] });
+      // Ensure Vue detects the change by reassigning the tasks array
+      this.selectedJob.tasks = [...this.selectedJob.tasks];
     },
+
 
     removeWorker(workerId) {
       if (confirm('Are you sure you want to remove this worker?')) {

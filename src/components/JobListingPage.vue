@@ -3,7 +3,7 @@
     <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
     
-    <!-- Keep Scheduling Area with WorkerList embedded within it -->
+    <!-- Scheduling Area with WorkerList embedded within it -->
     <scheduling-area
       v-if="selectedJob"
       :selected-job="selectedJob"
@@ -21,7 +21,7 @@
 
 <script>
 import JobList from './JobList.vue';
-import SchedulingArea from './SchedulingArea.vue'; // Removed WorkerList
+import SchedulingArea from './SchedulingArea.vue'; 
 import { useRouter } from 'vue-router';
 import axios from 'axios'; 
 
