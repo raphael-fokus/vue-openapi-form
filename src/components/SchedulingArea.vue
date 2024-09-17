@@ -13,18 +13,20 @@
         :key="index"
         class="task-entry"
       >
-        <strong>{{ task.worker.workerType }}/{{ task.action }}:</strong>
+        <strong>{{ task.worker?.workerType || 'Unassigned' }}/{{ task.action }}:</strong>
+
+        <!-- Draggable drop zone for workers -->
         <Draggable
-          :list="[]"
-          group="workers"
+          :list="[task.worker]"
+          :options="{ group: 'workers', put: true, pull: false }"
           class="task-drop-area"
           @change="onWorkerDrop($event, task)"
           item-key="workerId"
         >
           <template #item="{ element }">
             <div class="task-content">
-              <span v-if="task.worker && task.worker.workerName">
-                {{ task.worker.workerName }}
+              <span v-if="element && element.workerName">
+                {{ element.workerName }}
               </span>
               <span v-else>
                 Drop worker here
@@ -49,7 +51,7 @@
       </div>
     </div>
 
-    <!-- Worker List and Registration Form -->
+    <!-- Worker List -->
     <WorkerList
       :selected-job="selectedJob"
       @assign-worker="handleWorkerAssignment"
@@ -113,20 +115,24 @@ export default {
       const droppedElement = event.added?.element;
 
       if (droppedElement) {
-        // Replace the worker object to ensure Vue detects the change
+        console.log('Dropped worker:', droppedElement);
+
+        // Assign the worker to the task
         task.worker = {
           workerId: droppedElement.workerId,
           workerName: droppedElement.workerName,
           workerType: droppedElement.workerType,
-          refSettingId: droppedElement.refSettingId || ""  // Keep other relevant worker data
+          refSettingId: droppedElement.refSettingId || ""
         };
 
-        // Force Vue to re-render by reassigning the tasks array
+        // Trigger reactivity by reassigning the tasks array
         this.selectedJob.tasks = [...this.selectedJob.tasks];
+      } else {
+        console.log('No worker dropped');
       }
     },
 
-    handleWorkerAssignment({ worker, refSettingId }) {
+    handleWorkerAssignment({ worker }) {
       const unassignedTask = this.selectedJob.tasks.find(
         (task) => !task.worker.workerId && task.worker.workerType === worker.workerType
       );
@@ -136,6 +142,7 @@ export default {
         return;
       }
 
+      // Assign the worker to the task
       unassignedTask.worker = worker;
 
       // Trigger reactivity by replacing the task list with a new array

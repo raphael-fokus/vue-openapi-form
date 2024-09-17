@@ -32,6 +32,8 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
+
 export default {
   data() {
     return {
@@ -50,24 +52,34 @@ export default {
         })
         .catch(error => {
           console.error("Error fetching jobs:", error);
+          this.$toast.error("Error fetching jobs");
         });
     },
     scheduleJob(job) {
       this.$emit('schedule-job', job);
     },
     removeJob(jobId) {
-      if (confirm("Are you sure you want to remove this job?")) {
-        this.$axios.delete(`${this.baseUrl}/v1/measurement/${jobId}`)
-          .then(response => {
-            alert('Job removed successfully.');
-            // Remove the job from the list
-            this.jobs = this.jobs.filter(job => job.jobId !== jobId);
-          })
-          .catch(error => {
-            console.error("Error removing job:", error);
-            alert('Failed to remove the job. Please try again.');
-          });
-      }
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to remove this job?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it!',
+        cancelButtonText: 'Cancel',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.$axios.delete(`${this.baseUrl}/v1/measurement/${jobId}`)
+            .then(() => {
+              this.jobs = this.jobs.filter(job => job.jobId !== jobId);
+              this.$toast.success('Job removed successfully');
+            })
+            .catch(error => {
+              console.error("Error removing job:", error);
+              this.$toast.error('Failed to remove the job. Please try again.');
+            });
+          Swal.fire('Removed!', 'The job has been removed.', 'success');
+        }
+      });
     },
     isLastTask(task, tasks) {
       return tasks.indexOf(task) === tasks.length - 1;

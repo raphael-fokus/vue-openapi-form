@@ -31,6 +31,10 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
+import { useToast } from 'vue-toastification';  // Import useToast
+import axios from 'axios';
+
 export default {
   data() {
     return {
@@ -38,49 +42,67 @@ export default {
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
+  setup() {
+    const toast = useToast();  // Initialize toast
+
+    return {
+      toast  // Make toast available in the methods
+    };
+  },
   mounted() {
     this.fetchExecutions();
   },
   methods: {
     fetchExecutions() {
-      this.$axios.get(`${this.baseUrl}/v1/execution`)
+      axios.get(`${this.baseUrl}/v1/execution`)
         .then(response => {
           this.executions = response.data;
         })
         .catch(error => {
           console.error("Error fetching executions:", error);
         });
-      },
-      removeExecution(executionId) {
-        if (!confirm('Are you sure you want to remove this execution?')) return;
-
-        this.$axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
-          .then(() => {
-            this.executions = this.executions.filter(exe => exe.executionId !== executionId);
-            alert('Execution removed successfully');
-          })
-          .catch(error => {
-            console.error("Error removing execution:", error);
-          });
-      },
-      isLastTask(task, tasks) {
-        return tasks.indexOf(task) === tasks.length - 1;
-      },
-      getLocalTimeInGMT2() {
-        const currentDate = new Date();
-        const offset = 2 * 60;
-        const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
-        return localTime;
-      },
-      formatScheduledDate(scheduledDate) {
-        const localTime = this.getLocalTimeInGMT2();
-        return localTime.toISOString().slice(0, 16);
-      },
-      getProgressPercentage(currentTaskNo, overallTasksSteps) {
-        const percentage = (currentTaskNo / overallTasksSteps) * 100;
-        return `${percentage}%`;
-      }
+    },
+    removeExecution(executionId) {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to remove this execution?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it!',
+        cancelButtonText: 'Cancel',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
+            .then(() => {
+              this.executions = this.executions.filter(exe => exe.executionId !== executionId);
+              this.toast.success('Execution removed successfully');  // Success toast
+            })
+            .catch(error => {
+              console.error("Error removing execution:", error);
+              this.toast.error('Error removing execution');  // Error toast
+            });
+          Swal.fire('Removed!', 'The execution has been removed.', 'success');
+        }
+      });
+    },
+    isLastTask(task, tasks) {
+      return tasks.indexOf(task) === tasks.length - 1;
+    },
+    getLocalTimeInGMT2() {
+      const currentDate = new Date();
+      const offset = 2 * 60;
+      const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
+      return localTime;
+    },
+    formatScheduledDate(scheduledDate) {
+      const localTime = this.getLocalTimeInGMT2();
+      return localTime.toISOString().slice(0, 16);
+    },
+    getProgressPercentage(currentTaskNo, overallTasksSteps) {
+      const percentage = (currentTaskNo / overallTasksSteps) * 100;
+      return `${percentage}%`;
     }
+  }
 };
 </script>
 

@@ -23,6 +23,7 @@
 import JobList from './JobList.vue';
 import SchedulingArea from './SchedulingArea.vue'; 
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';  // Import useToast
 import axios from 'axios'; 
 
 export default {
@@ -38,13 +39,15 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const toast = useToast();  // Initialize toast
 
     const goToExecutionList = () => {
       router.push({ name: 'ExecutionList' });
     };
 
     return {
-      goToExecutionList
+      goToExecutionList,
+      toast  // Make toast available in the template and methods
     };
   },
   methods: {
@@ -70,12 +73,14 @@ export default {
       try {
         const response = await axios.post(`${this.baseUrl}/v1/execution`, payload);
         console.log('Job executed successfully:', response.data);
-        alert('Job scheduled successfully');
-        
+
+        this.toast.success('Job scheduled successfully');  // Success toast
+
         this.selectedJob = null;
       } catch (error) {
         console.error('Error executing job:', error);
-        alert('Failed to execute job. Please try again.');
+
+        this.toast.error('Failed to execute job. Please try again.');  // Error toast
       }
     }
   }

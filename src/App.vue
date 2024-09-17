@@ -120,6 +120,8 @@
 import Schemas from '@/json-schema.js';
 import { defineAsyncComponent, defineComponent } from 'vue';
 import { useRouter } from 'vue-router'; 
+import { useToast } from 'vue-toastification';  // Import useToast
+import axios from 'axios';
 
 export default defineComponent({
   name: 'App',
@@ -149,6 +151,7 @@ export default defineComponent({
   },
   setup() {
     const router = useRouter();
+    const toast = useToast(); // Initialize toast
 
     const goToJobListing = () => {
       router.push({ name: 'JobListing' });
@@ -161,6 +164,7 @@ export default defineComponent({
     return {
       goToJobListing,
       goToExecutionList,
+      toast // Expose toast to be used in methods
     };
   },
   watch: {
@@ -193,9 +197,9 @@ export default defineComponent({
       this.isLoading = true;
       const { valid } = await validate();
       if (valid) {
-        console.log('form is valid');
+        this.toast.success('Form is valid');
       } else {
-        console.log('form is invalid');
+        this.toast.error('Form is invalid');
       }
       this.isLoading = false;
     },
@@ -204,20 +208,21 @@ export default defineComponent({
       const { valid } = await validate();
       if (valid) {
         try {
-          const response = await this.$axios.post(
+          const response = await axios.post(
             `${this.baseUrl}/v1/measurement`,
             this.model
           );
-          console.log('Form submitted successfully:', response.data);
+          this.toast.success('Form submitted successfully');
           const jobListingPage = this.$refs.jobListingPage;
           if (jobListingPage && jobListingPage.refreshJobList) {
             jobListingPage.refreshJobList();
           }
         } catch (error) {
+          this.toast.error('Error submitting form');
           console.error('Error submitting form:', error);
         }
       } else {
-        console.log('form is invalid');
+        this.toast.error('Form is invalid');
       }
       this.isLoading = false;
     },
@@ -289,5 +294,4 @@ export default defineComponent({
     }
   }
 }
-
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="workers-container">
-    <h2>Available Workers</h2>
+    <h2>Workers</h2>
 
     <!-- Legend for worker status -->
     <div class="worker-legend">
@@ -10,53 +10,99 @@
       </p>
     </div>
 
-    <!-- Draggable List of Workers -->
+    <!-- Draggable List of Connected Workers -->
+    <h4>Connected Workers</h4>
     <draggable
-      v-if="workers.length"
-      v-model="workers"
+      v-if="connectedWorkers.length"
+      :list="connectedWorkers"
       :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }"
       item-key="workerId"
       class="draggable-worker-list"
     >
       <template #item="{ element }">
-        <div class="listEntry" v-if="element.connected">
+        <div class="listEntry connected">
           <div class="worker-details">
             <p>
               <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
               <i>({{ element.workerId }} ✔️)</i>
             </p>
-            <input type="text" v-model="refSetting[element.workerId]" placeholder="refSettingId" class="input is-primary" />
-          </div>
-          <div class="worker-actions">
-            <button @click="assignWorker(element)" class="button is-primary" :disabled="!element.connected">Assign</button>
-            <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">Remove</button>
+            <div class="worker-action-container">
+              <input
+                type="text"
+                v-model="refSetting[element.workerId]"
+                placeholder="refSettingId"
+                class="input is-primary ref-setting-input"
+              />
+              <button @click="assignWorker(element)" class="button is-primary">Assign</button>
+            </div>
           </div>
         </div>
       </template>
     </draggable>
 
+    <h4>Registered Workers</h4>
+    <!-- List of Registered (Unconnected) Workers -->
+    <div v-if="unconnectedWorkers.length">
+      <div
+        v-for="worker in unconnectedWorkers"
+        :key="worker.workerId"
+        class="listEntry not-connected"
+      >
+        <div class="worker-details">
+          <p>
+            <strong>{{ worker.workerType }}:</strong> {{ worker.workerName }}
+            <i>({{ worker.workerId }} ⚠️)</i>
+          </p>
+        </div>
+        <div class="worker-actions">
+          <button @click="connectWorker(worker)" class="button is-primary">Connect</button>
+          <button @click="removeWorker(worker.workerId)" class="button is-danger ml-10">Remove</button>
+        </div>
+      </div>
+    </div>
+
     <div v-else class="no-workers">
-      No connected workers available.
+      No workers available.
     </div>
 
     <!-- Worker Registration Form -->
     <div class="worker-registration">
-      <h3>Register a Worker</h3>
+      <h3>Registration of Workers</h3>
       <div class="form-field">
         <label for="workerType"><strong>Worker Type:</strong></label>
-        <input id="workerType" v-model="newWorker.workerType" placeholder="PLAYER, MEASURING, etc." class="input is-primary" />
+        <!-- Dropdown for worker types -->
+        <select id="workerType" v-model="newWorker.workerType" class="input is-primary">
+          <option value="" disabled>Select Worker Type</option>
+          <option value="PLAYER">PLAYER</option>
+          <option value="MEASURING">MEASURING</option>
+          <option value="ANALYST">ADMIN</option>
+          <option value="OPERATOR">USER</option>
+          <option value="OPERATOR">NETWORK</option>
+          <option value="OPERATOR">SOURCE</option>
+          <option value="OPERATOR">MANAGER</option>
+        </select>
       </div>
       <div class="form-field">
         <label for="workerName"><strong>Worker Name:</strong></label>
-        <input id="workerName" v-model="newWorker.workerName" placeholder="Worker Name" class="input is-primary" />
+        <input
+          id="workerName"
+          v-model="newWorker.workerName"
+          placeholder="Worker Name"
+          class="input is-primary"
+        />
       </div>
       <div class="form-field">
         <label for="workerId"><strong>Worker ID:</strong></label>
-        <input id="workerId" v-model="newWorker.workerId" placeholder="Worker ID" class="input is-primary" />
+        <input
+          id="workerId"
+          v-model="newWorker.workerId"
+          placeholder="Worker ID"
+          class="input is-primary"
+          readonly
+        />
       </div>
       <div class="registration-actions">
         <button @click="registerWorker" class="button is-primary">{{ registerButtonText }}</button>
-        <button @click="connectWorker" class="button is-primary ml-10">{{ connectButtonText }}</button>
       </div>
       <p class="state-message"><strong>State:</strong> {{ stateMessage }}</p>
     </div>
@@ -65,6 +111,9 @@
 
 <script>
 import draggable from 'vuedraggable';
+import axios from 'axios';
+import { useToast } from 'vue-toastification';
+import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
 
 export default {
   components: {
@@ -72,163 +121,116 @@ export default {
   },
   data() {
     return {
-      workers: [],
+      workers: [], // List of all workers (connected and unconnected)
       refSetting: {},
       newWorker: {
-        workerId: "",
-        workerType: "",
-        workerName: "",
+        workerId: uuidv4(), // Automatically generate a UUID for the Worker ID
+        workerType: '', // Worker type now selected from dropdown
+        workerName: '',
       },
-      registerButtonText: "Register",
-      connectButtonText: "Connect",
-      stateMessage: "Not registered",
-      baseUrl: import.meta.env.VITE_BASE_URL
+      registerButtonText: 'Register',
+      stateMessage: 'Not registered',
+      baseUrl: import.meta.env.VITE_BASE_URL,
     };
   },
-  props: {
-    selectedJob: {
-      type: Object,
-      required: true
-    }
-  },
   computed: {
-    // Only return connected workers to be draggable
     connectedWorkers() {
-      return this.workers.filter(worker => worker.connected);
-    }
+      return this.workers.filter((worker) => worker.connected);
+    },
+    unconnectedWorkers() {
+      return this.workers.filter((worker) => !worker.connected);
+    },
   },
   mounted() {
-    this.fetchWorkers();
+    this.fetchWorkers(); // Fetch all registered workers on mount
+  },
+  setup() {
+    const toast = useToast(); // Use the toast function here
+    return {
+      toast,
+    };
   },
   methods: {
     fetchWorkers() {
-      this.$axios.get(`${this.baseUrl}/v1/registration`)
-        .then(response => {
+      axios
+        .get(`${this.baseUrl}/v1/registration`)
+        .then((response) => {
           this.workers = response.data;
         })
-        .catch(error => {
-          console.error("Error fetching workers:", error);
+        .catch((error) => {
+          this.toast.error('Error fetching workers:', error);
         });
     },
-
     registerWorker() {
       if (!this.newWorker.workerType || !this.newWorker.workerName) {
-        this.stateMessage = "Please fill in both worker type and name.";
+        this.stateMessage = 'Please fill in both worker type and name.';
         return;
       }
-
-      this.$axios.post(`${this.baseUrl}/v1/registration`, this.newWorker)
-        .then(response => {
+      axios
+        .post(`${this.baseUrl}/v1/registration`, this.newWorker)
+        .then((response) => {
           const worker = response.data;
-
-          this.workers.push({
-            workerId: worker.workerId,
-            workerType: worker.workerType,
-            workerName: worker.workerName,
-            connected: false // Initially not connected
-          });
-
-          this.stateMessage = "Registered successfully!";
-          this.registerButtonText = "Unregister"; // Update the button text for unregister
+          const existingWorker = this.workers.find((w) => w.workerId === worker.workerId);
+          if (!existingWorker) {
+            this.workers.push({
+              workerId: worker.workerId,
+              workerType: worker.workerType,
+              workerName: worker.workerName,
+              connected: false, // Initially not connected
+            });
+            this.stateMessage = 'Worker registered successfully!';
+          }
+          // Generate a new UUID for the next worker registration
+          this.newWorker.workerId = uuidv4();
         })
-        .catch(error => {
-          console.error("Error registering worker:", error);
-          this.stateMessage = "Failed to register worker.";
+        .catch((error) => {
+          this.toast.error('Error registering worker:', error);
+          this.stateMessage = 'Failed to register worker.';
         });
     },
-
-    connectWorker() {
-      const { workerId } = this.newWorker;
-
-      if (!workerId) {
-        this.stateMessage = "Please register a worker first.";
-        return;
-      }
-
-      const socket = new WebSocket(`ws://${location.host.replace("3000", "3003")}/v1/connection?workerId=${workerId}`);
+    connectWorker(worker) {
+      const socket = new WebSocket(
+        `ws://${location.host.replace('3000', '3003')}/v1/connection?workerId=${worker.workerId}`
+      );
 
       socket.onopen = () => {
-        this.connectButtonText = "Disconnect";
-        this.stateMessage = "Connected successfully.";
+        this.stateMessage = `Worker ${worker.workerName} connected successfully!`;
+        this.toast.success(`Worker ${worker.workerName} connected successfully!`);
 
-        // Find the worker in the list and mark them as connected
-        const workerIndex = this.workers.findIndex(worker => worker.workerId === workerId);
+        const workerIndex = this.workers.findIndex((w) => w.workerId === worker.workerId);
         if (workerIndex !== -1) {
           this.workers[workerIndex].connected = true;
         }
-
-        // Reset the form state for new worker registration after connecting
-        this.resetForm();
       };
 
       socket.onclose = () => {
-        this.connectButtonText = "Connect";
-        this.stateMessage = "Disconnected.";
-
-        // Update the worker's connected status on disconnection
-        const workerIndex = this.workers.findIndex(worker => worker.workerId === workerId);
-        if (workerIndex !== -1) {
-          this.workers[workerIndex].connected = false;
-        }
+        this.stateMessage = `Worker ${worker.workerName} disconnected.`;
       };
 
       socket.onerror = () => {
-        this.stateMessage = "Connection error.";
+        this.stateMessage = 'Connection error.';
+        this.toast.error('Connection error.');
       };
     },
-
     assignWorker(worker) {
-      if (!worker.connected) {
-        alert('This worker is not connected and cannot be assigned.');
-        return;
-      }
-
-      const unassignedTask = this.selectedJob.tasks.find(
-        (task) => !task.worker.workerId && task.worker.workerType === worker.workerType
-      );
-
-      if (!unassignedTask) {
-        alert(`No unassigned tasks for worker type ${worker.workerType}.`);
-        return;
-      }
-
-      // Replace the worker object to ensure Vue detects the change
-      unassignedTask.worker = {
-        workerId: worker.workerId,
-        workerName: worker.workerName,
-        workerType: worker.workerType,
-        refSettingId: this.refSetting[worker.workerId] || ""
-      };
-
-      // Ensure Vue detects the change by reassigning the tasks array
-      this.selectedJob.tasks = [...this.selectedJob.tasks];
+      this.$emit('assign-worker', { worker });
     },
-
-
     removeWorker(workerId) {
       if (confirm('Are you sure you want to remove this worker?')) {
-        this.$axios.delete(`${this.baseUrl}/v1/registration/${workerId}`)
+        axios
+          .delete(`${this.baseUrl}/v1/registration/${workerId}`)
           .then(() => {
-            this.workers = this.workers.filter(worker => worker.workerId !== workerId);
-            alert('Worker removed successfully.');
+            this.workers = this.workers.filter((worker) => worker.workerId !== workerId);
+            this.stateMessage = 'Worker removed successfully.';
+            this.toast.success('Worker removed successfully.');
           })
-          .catch(error => {
-            console.error("Error removing worker:", error);
-            alert('Failed to remove worker.');
+          .catch((error) => {
+            this.stateMessage = 'Failed to remove worker.';
+            this.toast.error('Failed to remove worker.');
           });
       }
     },
-
-    resetForm() {
-      this.newWorker = {
-        workerId: "",
-        workerType: "",
-        workerName: "",
-      };
-      this.registerButtonText = "Register";
-      this.connectButtonText = "Connect";
-    }
-  }
+  },
 };
 </script>
 
@@ -241,56 +243,77 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.worker-registration {
-  margin-bottom: 20px;
-}
-
-.form-field {
-  margin-bottom: 10px;
-}
-
-.input.is-primary {
-  padding: 8px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-
 .worker-legend {
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 16px;
   color: #666;
-}
-
-.icon-warning {
-  color: #f39c12;
-}
-
-.icon-connected {
-  color: #27ae60;
 }
 
 .listEntry {
   background-color: #fff;
-  padding: 15px;
-  margin-bottom: 10px;
+  padding: 20px;
+  margin-bottom: 15px;
   border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.registration-actions {
+  margin-top: 10px;
 }
 
 .worker-details {
-  max-width: 70%;
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.worker-actions {
+.worker-details strong {
+  font-size: 16px;
+}
+
+.worker-action-container {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.ref-setting-input {
+  width: 150px;
+}
+
+.button.is-primary {
+  color: white;
+  border: none;
+}
+
+.button.is-danger {
+  color: white;
+  border: none;
+}
+
+.worker-registration {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ccc;
+}
+
+.input.is-primary {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  width: 100%;
 }
 
 .state-message {
-  font-size: 14px;
+  font-size: 16px;
   margin-top: 10px;
+  color: #333;
 }
 </style>
