@@ -8,28 +8,18 @@
       <p><strong>Assigned Workers:</strong></p>
 
       <!-- Task list with drop areas for workers -->
-      <div
-        v-for="(task, index) in selectedJob.tasks"
-        :key="index"
-        class="task-entry"
-      >
+      <div v-for="(task, index) in selectedJob.tasks" :key="index" class="task-entry">
         <strong>{{ task.worker?.workerType || 'Unassigned' }}/{{ task.action }}:</strong>
-
         <!-- Draggable drop zone for workers -->
-        <Draggable
-          :list="[task.worker]"
-          :options="{ group: 'workers', put: true, pull: false }"
-          class="task-drop-area"
-          @change="onWorkerDrop($event, task)"
-          item-key="workerId"
-        >
+        <Draggable :list="[task.worker ? task.worker : {}]" :options="{ group: 'workers', put: true, pull: false }"
+          class="task-drop-area" @change="onWorkerDrop($event, task)" item-key="workerId">
           <template #item="{ element }">
             <div class="task-content">
               <span v-if="element && element.workerName">
                 {{ element.workerName }}
               </span>
               <span v-else>
-                Drop worker here
+                ?
               </span>
             </div>
           </template>
@@ -37,12 +27,7 @@
       </div>
 
       <!-- Date Picker for Scheduling -->
-      <input
-        type="datetime-local"
-        v-model="scheduledDate"
-        :min="currentDateTime"
-        class="input is-primary"
-      />
+      <input type="datetime-local" v-model="scheduledDate" :min="currentDateTime" class="input is-primary" />
 
       <!-- Scheduling Actions -->
       <div class="scheduling-actions">
@@ -52,10 +37,7 @@
     </div>
 
     <!-- Worker List -->
-    <WorkerList
-      :selected-job="selectedJob"
-      @assign-worker="handleWorkerAssignment"
-    />
+    <WorkerList :selected-job="selectedJob" @assign-worker="handleWorkerAssignment" />
   </div>
 </template>
 
@@ -117,15 +99,13 @@ export default {
       if (droppedElement) {
         console.log('Dropped worker:', droppedElement);
 
-        // Assign the worker to the task
+
         task.worker = {
           workerId: droppedElement.workerId,
           workerName: droppedElement.workerName,
           workerType: droppedElement.workerType,
           refSettingId: droppedElement.refSettingId || ""
         };
-
-        // Trigger reactivity by reassigning the tasks array
         this.selectedJob.tasks = [...this.selectedJob.tasks];
       } else {
         console.log('No worker dropped');
@@ -141,11 +121,7 @@ export default {
         alert(`No unassigned tasks for worker type ${worker.workerType}.`);
         return;
       }
-
-      // Assign the worker to the task
       unassignedTask.worker = worker;
-
-      // Trigger reactivity by replacing the task list with a new array
       this.selectedJob.tasks = [...this.selectedJob.tasks];
     }
   },

@@ -12,13 +12,9 @@
 
     <!-- Draggable List of Connected Workers -->
     <h4>Connected Workers</h4>
-    <draggable
-      v-if="connectedWorkers.length"
-      :list="connectedWorkers"
-      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }"
-      item-key="workerId"
-      class="draggable-worker-list"
-    >
+    <draggable v-if="connectedWorkers.length" :list="connectedWorkers"
+      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }" item-key="workerId"
+      class="draggable-worker-list">
       <template #item="{ element }">
         <div class="listEntry connected">
           <div class="worker-details">
@@ -27,12 +23,8 @@
               <i>({{ element.workerId }} ✔️)</i>
             </p>
             <div class="worker-action-container">
-              <input
-                type="text"
-                v-model="refSetting[element.workerId]"
-                placeholder="refSettingId"
-                class="input is-primary ref-setting-input"
-              />
+              <input type="text" v-model="refSetting[element.workerId]" placeholder="refSettingId"
+                class="input is-primary ref-setting-input" />
               <button @click="assignWorker(element)" class="button is-primary">Assign</button>
             </div>
           </div>
@@ -43,11 +35,7 @@
     <h4>Registered Workers</h4>
     <!-- List of Registered (Unconnected) Workers -->
     <div v-if="unconnectedWorkers.length">
-      <div
-        v-for="worker in unconnectedWorkers"
-        :key="worker.workerId"
-        class="listEntry not-connected"
-      >
+      <div v-for="worker in unconnectedWorkers" :key="worker.workerId" class="listEntry not-connected">
         <div class="worker-details">
           <p>
             <strong>{{ worker.workerType }}:</strong> {{ worker.workerName }}
@@ -84,22 +72,11 @@
       </div>
       <div class="form-field">
         <label for="workerName"><strong>Worker Name:</strong></label>
-        <input
-          id="workerName"
-          v-model="newWorker.workerName"
-          placeholder="Worker Name"
-          class="input is-primary"
-        />
+        <input id="workerName" v-model="newWorker.workerName" placeholder="Worker Name" class="input is-primary" />
       </div>
       <div class="form-field">
         <label for="workerId"><strong>Worker ID:</strong></label>
-        <input
-          id="workerId"
-          v-model="newWorker.workerId"
-          placeholder="Worker ID"
-          class="input is-primary"
-          readonly
-        />
+        <input id="workerId" v-model="newWorker.workerId" placeholder="Worker ID" class="input is-primary" readonly />
       </div>
       <div class="registration-actions">
         <button @click="registerWorker" class="button is-primary">{{ registerButtonText }}</button>

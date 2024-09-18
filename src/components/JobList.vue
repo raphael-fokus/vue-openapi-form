@@ -122,7 +122,7 @@ h2 {
 }
 
 .job-name {
-  margin-right: 5px; 
+  margin-right: 5px;
 }
 
 .job-info {

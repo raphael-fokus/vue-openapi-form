@@ -7,9 +7,7 @@
           <!-- Navbar brand logo -->
           <div class="ac-navbar-brand">
             <a href="https://byte.builders/">
-              <img
-                src="https://cdn.appscode.com/images/products/bytebuilders/bytebuilders.png"
-              />
+              <img src="https://cdn.appscode.com/images/products/bytebuilders/bytebuilders.png" />
             </a>
             <strong>(Vue OpenAPI Form)</strong>
           </div>
@@ -20,7 +18,7 @@
               Jobs & Scheduling
             </button>
             <button class="button is-primary ml-10" @click="goToExecutionList">
-              Current/Past Executions
+              Executions
             </button>
 
             <!-- GitHub link -->
@@ -43,11 +41,7 @@
               <h5 class="mb-10 is-block">Select Schema</h5>
               <div class="select is-fullwidth">
                 <select id="schema-selection" v-model="selectedJsonSchema">
-                  <option
-                    v-for="schema in jsonSchemas"
-                    :key="schema.title"
-                    :value="schema"
-                  >
+                  <option v-for="schema in jsonSchemas" :key="schema.title" :value="schema">
                     {{ schema.title }}
                   </option>
                 </select>
@@ -61,65 +55,37 @@
                 </button>
               </div>
             </div>
-            <schema-model
-              :key="JSON.stringify(selectedJsonSchema)"
-              :schema-model="selectedJsonSchema"
-              @submit="updateSchema"
-            />
+            <schema-model :key="JSON.stringify(selectedJsonSchema)" :schema-model="selectedJsonSchema"
+              @submit="updateSchema" />
           </div>
         </div>
         <div class="right-content">
-          <vue-openapi-form
-            ref="vof"
-            :key="JSON.stringify(selectedJsonSchema)"
-            v-model="model"
-            class="ml-10"
-            :schema="jsonSchema"
-            :reference-model="referenceModel || ''"
-            :form-title="formTitle"
-          >
+          <vue-openapi-form ref="vof" :key="JSON.stringify(selectedJsonSchema)" v-model="model" class="ml-10"
+            :schema="jsonSchema" :reference-model="referenceModel || ''" :form-title="formTitle">
             <template #left-controls>
-              <ac-button
-                title="Cancel"
-                modifier-classes="is-outlined is-danger"
-                @click.prevent="cancelFunc"
-              />
+              <ac-button title="Cancel" modifier-classes="is-outlined is-danger" @click.prevent="cancelFunc" />
             </template>
             <template #right-controls="{ validate }">
-              <ac-button
-                title="Done"
-                :is-loader-active="isLoading"
-                icon-class="check"
-                @click.prevent="submitFunc(validate)"
-              />
-              <ac-button
-                title="Submit"
-                class="ml-10"
-                :is-loader-active="isLoading"
-                icon-class="send"
-                @click.prevent="submitData(validate)"
-              />
+              <ac-button title="Done" :is-loader-active="isLoading" icon-class="check"
+                @click.prevent="submitFunc(validate)" />
+              <ac-button title="Submit" class="ml-10" :is-loader-active="isLoading" icon-class="send"
+                @click.prevent="submitData(validate)" />
             </template>
           </vue-openapi-form>
         </div>
 
-        <ac-button
-          title="Call Validate"
-          :is-loader-active="isLoading"
-          icon-class="check"
-          class="mt-50"
-          @click.prevent="callValidate"
-        />
+        <ac-button title="Call Validate" :is-loader-active="isLoading" icon-class="check" class="mt-50"
+          @click.prevent="callValidate" />
       </div>
     </div>
-    <router-view ref="jobListingPage"/>
+    <router-view ref="jobListingPage" />
   </div>
 </template>
 
 <script>
 import Schemas from '@/json-schema.js';
 import { defineAsyncComponent, defineComponent } from 'vue';
-import { useRouter } from 'vue-router'; 
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';  // Import useToast
 import axios from 'axios';
 
@@ -243,6 +209,7 @@ export default defineComponent({
       grid-template-columns: 500px auto;
       width: 100%;
       gap: 20px;
+
       .ac-navbar-brand {
         padding-left: 15px;
       }
@@ -261,6 +228,7 @@ export default defineComponent({
     .ac-navbar-brand {
       display: flex;
       align-items: center;
+
       .logo {
         font-size: 20px;
         font-weight: 600;
@@ -271,9 +239,11 @@ export default defineComponent({
         height: 30px;
       }
     }
+
     .ac-navbar-cluster-switcher {
       max-width: 350px;
     }
+
     .ac-navbar-menu {
       display: flex;
       align-items: center;
@@ -286,6 +256,7 @@ export default defineComponent({
     }
   }
 }
+
 // for sidebar-collapsed
 .sidebar-collapsed {
   .ac-navbar {

@@ -2,14 +2,10 @@
   <div class="job-listing-container">
     <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
-    
+
     <!-- Scheduling Area with WorkerList embedded within it -->
-    <scheduling-area
-      v-if="selectedJob"
-      :selected-job="selectedJob"
-      @cancel-schedule="cancelSchedule"
-      @execute-job="executeJob"
-    />
+    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
+      @execute-job="executeJob" />
 
     <!-- Button with an icon pointing to Execution List -->
     <button @click="goToExecutionList" class="icon-button">
@@ -21,10 +17,10 @@
 
 <script>
 import JobList from './JobList.vue';
-import SchedulingArea from './SchedulingArea.vue'; 
+import SchedulingArea from './SchedulingArea.vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';  // Import useToast
-import axios from 'axios'; 
+import axios from 'axios';
 
 export default {
   components: {

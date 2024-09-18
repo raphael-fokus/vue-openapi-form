@@ -4,15 +4,18 @@
     <div v-if="executions.length">
       <div v-for="exe in executions" :key="exe.executionId" class="listEntry">
         <div class="execution-details">
-          <p><strong>{{ formatScheduledDate(exe.date) }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})</p>
-          <p><strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} / {{ exe.overallTasksSteps }}</p>
-          
+          <p><strong>{{ formatScheduledDate(exe.date) }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId
+            }} / {{ exe.executionId }})</p>
+          <p><strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} / {{
+            exe.overallTasksSteps }}</p>
+
           <!-- Progress Bar for task execution -->
           <div class="progress-bar">
-            <div class="progress" :style="{ width: getProgressPercentage(exe.currentTaskNo, exe.overallTasksSteps) }"></div>
+            <div class="progress" :style="{ width: getProgressPercentage(exe.currentTaskNo, exe.overallTasksSteps) }">
+            </div>
           </div>
 
-          <p><strong>Workers:</strong> 
+          <p><strong>Workers:</strong>
             <span v-for="task in exe.job.tasks" :key="task.worker.workerId">
               {{ task.worker.workerType }} - {{ task.worker.workerName }}
               <span v-if="!isLastTask(task, exe.job.tasks)">, </span>
