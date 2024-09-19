@@ -35,7 +35,7 @@
 
 <script>
 import Swal from 'sweetalert2';
-import { useToast } from 'vue-toastification';  // Import useToast
+import { useToast } from 'vue-toastification';
 import axios from 'axios';
 
 export default {
@@ -45,16 +45,19 @@ export default {
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
+
   setup() {
-    const toast = useToast();  // Initialize toast
+    const toast = useToast();
 
     return {
-      toast  // Make toast available in the methods
+      toast
     };
   },
+
   mounted() {
     this.fetchExecutions();
   },
+
   methods: {
     fetchExecutions() {
       axios.get(`${this.baseUrl}/v1/execution`)
@@ -65,6 +68,7 @@ export default {
           console.error("Error fetching executions:", error);
         });
     },
+
     removeExecution(executionId) {
       Swal.fire({
         title: 'Are you sure?',
@@ -91,16 +95,19 @@ export default {
     isLastTask(task, tasks) {
       return tasks.indexOf(task) === tasks.length - 1;
     },
+
     getLocalTimeInGMT2() {
       const currentDate = new Date();
       const offset = 2 * 60;
       const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
       return localTime;
     },
+
     formatScheduledDate(scheduledDate) {
       const localTime = this.getLocalTimeInGMT2();
       return localTime.toISOString().slice(0, 16);
     },
+
     getProgressPercentage(currentTaskNo, overallTasksSteps) {
       const percentage = (currentTaskNo / overallTasksSteps) * 100;
       return `${percentage}%`;

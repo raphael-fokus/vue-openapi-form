@@ -33,6 +33,7 @@
 
 <script>
 import Swal from 'sweetalert2';
+import { useToast } from 'vue-toastification';
 
 export default {
   data() {
@@ -41,8 +42,14 @@ export default {
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
+  setup() {
+    const toast = useToast();
+    return { toast };
+  },
   mounted() {
     this.fetchJobs();
+    const toast = useToast();
+    return { toast };
   },
   methods: {
     fetchJobs() {
@@ -71,11 +78,11 @@ export default {
           this.$axios.delete(`${this.baseUrl}/v1/measurement/${jobId}`)
             .then(() => {
               this.jobs = this.jobs.filter(job => job.jobId !== jobId);
-              this.$toast.success('Job removed successfully');
+              this.toast.success('Job removed successfully');
             })
             .catch(error => {
               console.error("Error removing job:", error);
-              this.$toast.error('Failed to remove the job. Please try again.');
+              this.toast.error('Failed to remove the job. Please try again.');
             });
           Swal.fire('Removed!', 'The job has been removed.', 'success');
         }

@@ -19,7 +19,7 @@
 import JobList from './JobList.vue';
 import SchedulingArea from './SchedulingArea.vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';  // Import useToast
+import { useToast } from 'vue-toastification'; 
 import axios from 'axios';
 
 export default {
@@ -35,7 +35,7 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const toast = useToast();  // Initialize toast
+    const toast = useToast();  
 
     const goToExecutionList = () => {
       router.push({ name: 'ExecutionList' });
@@ -43,16 +43,25 @@ export default {
 
     return {
       goToExecutionList,
-      toast  // Make toast available in the template and methods
+      toast  
     };
   },
   methods: {
     scheduleJob(job) {
       this.selectedJob = job;
     },
+    
     cancelSchedule() {
       this.selectedJob = null;
     },
+
+    refreshJobList() {
+      if (this.$refs.jobList) {
+        // For refreshing job list after succesful submission via form
+        this.$refs.jobList.fetchJobs(); 
+      }
+    },
+
     async executeJob(scheduleData) {
       let { scheduledDate } = scheduleData;
       if (!scheduledDate) {
@@ -70,13 +79,13 @@ export default {
         const response = await axios.post(`${this.baseUrl}/v1/execution`, payload);
         console.log('Job executed successfully:', response.data);
 
-        this.toast.success('Job scheduled successfully');  // Success toast
+        this.toast.success('Job scheduled successfully'); 
 
         this.selectedJob = null;
       } catch (error) {
         console.error('Error executing job:', error);
 
-        this.toast.error('Failed to execute job. Please try again.');  // Error toast
+        this.toast.error('Failed to execute job. Please try again.');  
       }
     }
   }

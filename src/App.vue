@@ -14,16 +14,12 @@
 
           <!-- Navigation buttons for Job Listing & Scheduling and Executions -->
           <div class="ac-navbar-menu">
-            <button class="button is-primary ml-10" @click="goToJobListing">
-              Jobs & Scheduling
-            </button>
-            <button class="button is-primary ml-10" @click="goToExecutionList">
-              Executions
-            </button>
+            <button class="button is-primary ml-10" @click="goToJobListing">Jobs & Scheduling</button>
+            <button class="button is-primary ml-10" @click="goToExecutionList">Executions</button>
 
             <!-- GitHub link -->
             <div class="ac-menu-item">
-              <a href="https://github.com/appscode/vue-openapi-form" class="button ac-nav-button">
+              <a href="https://github.com/raphael-fokus/vue-openapi-form" class="button ac-nav-button">
                 <i class="fa fa-github" aria-hidden="true"></i>
               </a>
             </div>
@@ -50,9 +46,7 @@
             <div v-else class="level">
               <div class="level-left">Schema has been modified</div>
               <div class="level-right">
-                <button class="button is-warning" @click.prevent="resetForm()">
-                  Reset
-                </button>
+                <button class="button is-warning" @click.prevent="resetForm">Reset</button>
               </div>
             </div>
             <schema-model :key="JSON.stringify(selectedJsonSchema)" :schema-model="selectedJsonSchema"
@@ -63,22 +57,26 @@
           <vue-openapi-form ref="vof" :key="JSON.stringify(selectedJsonSchema)" v-model="model" class="ml-10"
             :schema="jsonSchema" :reference-model="referenceModel || ''" :form-title="formTitle">
             <template #left-controls>
-              <ac-button title="Cancel" modifier-classes="is-outlined is-danger" @click.prevent="cancelFunc" />
+              <ac-button title="Clear" modifier-classes="is-outlined is-danger" @click.prevent="clearFormInputs" />
             </template>
             <template #right-controls="{ validate }">
               <ac-button title="Done" :is-loader-active="isLoading" icon-class="check"
                 @click.prevent="submitFunc(validate)" />
               <ac-button title="Submit" class="ml-10" :is-loader-active="isLoading" icon-class="send"
                 @click.prevent="submitData(validate)" />
+
+              <!-- Toggle for optional form clearing -->
+              <div class="clear-form-toggle">
+                <input type="checkbox" id="clearFormCheckbox" v-model="clearForm" />
+                <label for="clearFormCheckbox">Clear form after submission</label>
+              </div>
+              <div></div>
             </template>
           </vue-openapi-form>
         </div>
-
-        <ac-button title="Call Validate" :is-loader-active="isLoading" icon-class="check" class="mt-50"
-          @click.prevent="callValidate" />
       </div>
+      <router-view ref="jobListingPage" />
     </div>
-    <router-view ref="jobListingPage" />
   </div>
 </template>
 
@@ -86,7 +84,7 @@
 import Schemas from '@/json-schema.js';
 import { defineAsyncComponent, defineComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';  // Import useToast
+import { useToast } from 'vue-toastification';
 import axios from 'axios';
 
 export default defineComponent({
@@ -105,19 +103,20 @@ export default defineComponent({
   data() {
     return {
       jsonSchemas: Schemas,
-      selectedJsonSchema: Schemas[0],
-      jsonSchema: {},
-      model: {},
+      selectedJsonSchema: this.getPersistedSchema() || Schemas[0],
+      jsonSchema: this.getPersistedJsonSchema(),
+      model: this.getPersistedModel(),
       referenceModel: {},
       formTitle: '',
       modifiedSchema: false,
       isLoading: false,
+      clearForm: true,
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
   setup() {
     const router = useRouter();
-    const toast = useToast(); // Initialize toast
+    const toast = useToast();
 
     const goToJobListing = () => {
       router.push({ name: 'JobListing' });
@@ -130,7 +129,7 @@ export default defineComponent({
     return {
       goToJobListing,
       goToExecutionList,
-      toast // Expose toast to be used in methods
+      toast
     };
   },
   watch: {
@@ -144,7 +143,14 @@ export default defineComponent({
           this.referenceModel = JSON.parse(JSON.stringify(this.model));
         }, 2000);
         this.formTitle = newVal.title;
+        this.persistSchema(newVal);
       },
+    },
+    model: {
+      handler(newVal) {
+        this.persistModel(newVal);
+      },
+      deep: true,
     },
   },
   methods: {
@@ -152,13 +158,34 @@ export default defineComponent({
       this.modifiedSchema = true;
       this.selectedJsonSchema = e;
     },
+
     resetForm() {
       this.modifiedSchema = false;
       this.selectedJsonSchema = Schemas[0];
+      this.clearFormInputs();
     },
+
+    clearFormInputs() {
+      this.model = { ...this.model };
+      for (const key in this.model) {
+        if (this.model.hasOwnProperty(key)) {
+          if (Array.isArray(this.model[key])) {
+            this.model[key] = [];
+          } else if (typeof this.model[key] === 'object' && this.model[key] !== null) {
+            this.model[key] = {};
+          } else {
+            this.model[key] = '';
+          }
+        }
+      }
+
+      this.$refs.vof.$forceUpdate();  // Force update to refresh the form
+    },
+
     cancelFunc() {
       console.log('form is canceled');
     },
+
     async submitFunc(validate) {
       this.isLoading = true;
       const { valid } = await validate();
@@ -169,33 +196,55 @@ export default defineComponent({
       }
       this.isLoading = false;
     },
+
     async submitData(validate) {
       this.isLoading = true;
       const { valid } = await validate();
       if (valid) {
         try {
-          const response = await axios.post(
-            `${this.baseUrl}/v1/measurement`,
-            this.model
-          );
-          this.toast.success('Form submitted successfully');
+          await axios.post(`${this.baseUrl}/v1/measurement`, this.model);
+          this.toast.success('Job submitted successfully');
+
           const jobListingPage = this.$refs.jobListingPage;
           if (jobListingPage && jobListingPage.refreshJobList) {
             jobListingPage.refreshJobList();
           }
+
+          if (this.clearForm) {
+            this.clearFormInputs();
+          }
         } catch (error) {
-          this.toast.error('Error submitting form');
-          console.error('Error submitting form:', error);
+          this.toast.error('Error submitting Job');
         }
       } else {
         this.toast.error('Form is invalid');
       }
       this.isLoading = false;
     },
-    async callValidate() {
-      const { valid } = await this.$refs.vof.$refs['v-form'].validate();
-      console.log(valid);
+
+    // Persistence 
+    persistModel(model) {
+      localStorage.setItem('formModel', JSON.stringify(model));
     },
+
+    persistSchema(schema) {
+      localStorage.setItem('formSchema', JSON.stringify(schema));
+    },
+
+    getPersistedModel() {
+      const persistedModel = localStorage.getItem('formModel');
+      return persistedModel ? JSON.parse(persistedModel) : {};
+    },
+
+    getPersistedSchema() {
+      const persistedSchema = localStorage.getItem('formSchema');
+      return persistedSchema ? JSON.parse(persistedSchema) : null;
+    },
+
+    getPersistedJsonSchema() {
+      const persistedSchema = this.getPersistedSchema();
+      return persistedSchema ? JSON.parse(JSON.stringify(persistedSchema.schema)) : {};
+    }
   },
 });
 </script>
@@ -257,12 +306,31 @@ export default defineComponent({
   }
 }
 
-// for sidebar-collapsed
-.sidebar-collapsed {
-  .ac-navbar {
-    .ac-navbar-brand {
-      padding-left: 70px !important;
-    }
-  }
+// Custom styling for form controls
+.form-controls {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.clear-button {
+  margin-bottom: 10px;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clear-form-toggle {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.clear-form-toggle input {
+  margin-right: 10px;
 }
 </style>
