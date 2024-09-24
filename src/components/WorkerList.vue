@@ -63,11 +63,11 @@
           <option value="" disabled>Select Worker Type</option>
           <option value="PLAYER">PLAYER</option>
           <option value="MEASURING">MEASURING</option>
-          <option value="ANALYST">ADMIN</option>
-          <option value="OPERATOR">USER</option>
-          <option value="OPERATOR">NETWORK</option>
-          <option value="OPERATOR">SOURCE</option>
-          <option value="OPERATOR">MANAGER</option>
+          <option value="ADMIN">ADMIN</option>
+          <option value="USER">USER</option>
+          <option value="NETWORK">NETWORK</option>
+          <option value="SOURCE">SOURCE</option>
+          <option value="MANAGER">MANAGER</option>
         </select>
       </div>
       <div class="form-field">

@@ -28,7 +28,6 @@
         <!-- navbar end -->
       </div>
     </div>
-
     <div class="vue-form-scema-body mt-50">
       <div class="is-flex gap-20">
         <div class="left-content">
@@ -56,21 +55,25 @@
         <div class="right-content">
           <vue-openapi-form ref="vof" :key="JSON.stringify(selectedJsonSchema)" v-model="model" class="ml-10"
             :schema="jsonSchema" :reference-model="referenceModel || ''" :form-title="formTitle">
+
             <template #left-controls>
-              <ac-button title="Clear" modifier-classes="is-outlined is-danger" @click.prevent="clearFormInputs" />
+              <div class="form-controls-left">
+                <ac-button title="Clear" modifier-classes="is-outlined is-danger" @click.prevent="clearFormInputs" />
+              </div>
             </template>
             <template #right-controls="{ validate }">
-              <ac-button title="Done" :is-loader-active="isLoading" icon-class="check"
-                @click.prevent="submitFunc(validate)" />
-              <ac-button title="Submit" class="ml-10" :is-loader-active="isLoading" icon-class="send"
-                @click.prevent="submitData(validate)" />
+              <div class="form-controls-right">
+                <ac-button title="Done" :is-loader-active="isLoading" icon-class="check"
+                  @click.prevent="submitFunc(validate)" />
+                <ac-button title="Submit" class="ml-10" :is-loader-active="isLoading" icon-class="send"
+                  @click.prevent="submitData(validate)" />
 
-              <!-- Toggle for optional form clearing -->
+                <!-- Checkbox for optional form clearing after submission
               <div class="clear-form-toggle">
                 <input type="checkbox" id="clearFormCheckbox" v-model="clearForm" />
                 <label for="clearFormCheckbox">Clear form after submission</label>
+              </div>-->
               </div>
-              <div></div>
             </template>
           </vue-openapi-form>
         </div>
@@ -103,15 +106,16 @@ export default defineComponent({
   data() {
     return {
       jsonSchemas: Schemas,
-      selectedJsonSchema: this.getPersistedSchema() || Schemas[0],
-      jsonSchema: this.getPersistedJsonSchema(),
-      model: this.getPersistedModel(),
+      selectedJsonSchema: null, // Will be set in created()
+      jsonSchema: {},           // Will be set in created()
+      model: {},                // Will be set in created()
       referenceModel: {},
       formTitle: '',
       modifiedSchema: false,
       isLoading: false,
       clearForm: true,
-      baseUrl: import.meta.env.VITE_BASE_URL
+      baseUrl: import.meta.env.VITE_BASE_URL,
+      initialModel: {}, // Will store a deep copy of the initial model
     };
   },
   setup() {
@@ -132,15 +136,41 @@ export default defineComponent({
       toast
     };
   },
+  created() {
+    // Get persisted schema and model from local storage
+    const persistedSchema = this.getPersistedSchema();
+    const persistedModel = this.getPersistedModel();
+
+    // Set selectedJsonSchema
+    this.selectedJsonSchema = persistedSchema || this.jsonSchemas[0];
+
+    // Set jsonSchema based on selectedJsonSchema
+    this.jsonSchema = JSON.parse(JSON.stringify(this.selectedJsonSchema.schema));
+
+    // Set model
+    this.model = persistedModel || JSON.parse(JSON.stringify(this.selectedJsonSchema.model));
+
+    // Store a deep copy of the initial model
+    this.initialModel = JSON.parse(JSON.stringify(this.model));
+
+    // Set formTitle based on selectedJsonSchema
+    this.formTitle = this.selectedJsonSchema.title;
+
+    // Initialize referenceModel
+    this.referenceModel = JSON.parse(JSON.stringify(this.model));
+  },
   watch: {
     selectedJsonSchema: {
       deep: true,
       immediate: true,
       async handler(newVal) {
+        if (!newVal) return; // Prevent errors when newVal is null
         this.jsonSchema = JSON.parse(JSON.stringify(newVal.schema));
-        await setTimeout(() => {
+        setTimeout(() => {
           this.model = JSON.parse(JSON.stringify(newVal.model));
           this.referenceModel = JSON.parse(JSON.stringify(this.model));
+          // Update the initial model
+          this.initialModel = JSON.parse(JSON.stringify(this.model));
         }, 2000);
         this.formTitle = newVal.title;
         this.persistSchema(newVal);
@@ -166,19 +196,9 @@ export default defineComponent({
     },
 
     clearFormInputs() {
-      this.model = { ...this.model };
-      for (const key in this.model) {
-        if (this.model.hasOwnProperty(key)) {
-          if (Array.isArray(this.model[key])) {
-            this.model[key] = [];
-          } else if (typeof this.model[key] === 'object' && this.model[key] !== null) {
-            this.model[key] = {};
-          } else {
-            this.model[key] = '';
-          }
-        }
-      }
-
+      // Reset the model to the initial state
+      this.model = JSON.parse(JSON.stringify(this.initialModel));
+      this.persistModel(this.model); // Update local storage
       this.$refs.vof.$forceUpdate();  // Force update to refresh the form
     },
 
@@ -233,7 +253,7 @@ export default defineComponent({
 
     getPersistedModel() {
       const persistedModel = localStorage.getItem('formModel');
-      return persistedModel ? JSON.parse(persistedModel) : {};
+      return persistedModel ? JSON.parse(persistedModel) : null;
     },
 
     getPersistedSchema() {
@@ -304,6 +324,18 @@ export default defineComponent({
       }
     }
   }
+}
+
+.form-controls-left,
+.form-controls-right {
+  display: flex;
+  align-items: center;
+}
+
+.vue-openapi-form__controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 // Custom styling for form controls
