@@ -20,7 +20,6 @@
           @focus="triggerInput()"
           @blur="unTriggerInput()"
         >
-          <option v-if="!modelData" value="" disabled>Select an option</option>
           <option
             v-for="option in schema.enum"
             :key="option"
