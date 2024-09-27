@@ -127,6 +127,16 @@ export default {
       toast,
     };
   },
+  watch: {
+    workers: {
+      handler(newVal) {
+        // Emit the list of workers whenever it's updated
+        this.$emit('update-workers', newVal);
+      },
+      deep: true,
+      immediate: true,
+    },
+  },
   methods: {
     fetchWorkers() {
       axios

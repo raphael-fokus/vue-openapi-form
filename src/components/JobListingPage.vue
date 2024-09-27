@@ -2,10 +2,11 @@
   <div class="job-listing-container">
     <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
-
     <!-- Scheduling Area with WorkerList embedded within it -->
-    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
-      @execute-job="executeJob" />
+    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" :available-workers="availableWorkers" @cancel-schedule="cancelSchedule" @execute-job="executeJob" />
+
+    <!-- WorkerList to show connected and registered workers -->
+    <worker-list @update-workers="updateAvailableWorkers" />
 
     <!-- Button with an icon pointing to Execution List -->
     <button @click="goToExecutionList" class="icon-button">
@@ -18,24 +19,27 @@
 <script>
 import JobList from './JobList.vue';
 import SchedulingArea from './SchedulingArea.vue';
+import WorkerList from './WorkerList.vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification'; 
+import { useToast } from 'vue-toastification';
 import axios from 'axios';
 
 export default {
   components: {
     JobList,
-    SchedulingArea
+    SchedulingArea,
+    WorkerList
   },
   data() {
     return {
       selectedJob: null,
+      availableWorkers: [], // Initialize availableWorkers
       baseUrl: import.meta.env.VITE_BASE_URL
     };
   },
   setup() {
     const router = useRouter();
-    const toast = useToast();  
+    const toast = useToast();
 
     const goToExecutionList = () => {
       router.push({ name: 'ExecutionList' });
@@ -43,25 +47,19 @@ export default {
 
     return {
       goToExecutionList,
-      toast  
+      toast
     };
   },
   methods: {
     scheduleJob(job) {
       this.selectedJob = job;
     },
-    
     cancelSchedule() {
       this.selectedJob = null;
     },
-
-    refreshJobList() {
-      if (this.$refs.jobList) {
-        // For refreshing job list after succesful submission via form
-        this.$refs.jobList.fetchJobs(); 
-      }
+    updateAvailableWorkers(workers) {
+      this.availableWorkers = workers; // Update available workers when received
     },
-
     async executeJob(scheduleData) {
       let { scheduledDate } = scheduleData;
       if (!scheduledDate) {
@@ -79,13 +77,13 @@ export default {
         const response = await axios.post(`${this.baseUrl}/v1/execution`, payload);
         console.log('Job executed successfully:', response.data);
 
-        this.toast.success('Job scheduled successfully'); 
+        this.toast.success('Job scheduled successfully');
 
         this.selectedJob = null;
       } catch (error) {
         console.error('Error executing job:', error);
 
-        this.toast.error('Failed to execute job. Please try again.');  
+        this.toast.error('Failed to execute job. Please try again.');
       }
     }
   }
