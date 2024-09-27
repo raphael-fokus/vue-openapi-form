@@ -195,7 +195,7 @@ export default {
 }
 
 .ref-setting-input {
-  width: 150px;
+  width: 270px;
 }
 
 .button.is-primary {

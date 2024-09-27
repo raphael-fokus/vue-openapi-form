@@ -42,7 +42,9 @@ export default {
   data() {
     return {
       executions: [],
-      baseUrl: import.meta.env.VITE_BASE_URL
+      baseUrl: import.meta.env.VITE_BASE_URL,
+      pollInterval: null, // Variable to store the interval ID
+      refreshInterval: 5000 // 5 seconds refresh interval
     };
   },
 
@@ -55,7 +57,12 @@ export default {
   },
 
   mounted() {
-    this.fetchExecutions();
+    this.fetchExecutions(); // Initial fetch
+    this.startPollingExecutions(); // Start polling on component mount
+  },
+
+  beforeUnmount() {
+    this.stopPollingExecutions(); // Stop polling when the component is unmounted
   },
 
   methods: {
@@ -67,6 +74,21 @@ export default {
         .catch(error => {
           console.error("Error fetching executions:", error);
         });
+    },
+
+    // Start polling the executions API
+    startPollingExecutions() {
+      this.pollInterval = setInterval(() => {
+        this.fetchExecutions(); // Fetch executions every X seconds
+      }, this.refreshInterval);
+    },
+
+    // Stop polling the executions API
+    stopPollingExecutions() {
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval);
+        this.pollInterval = null;
+      }
     },
 
     removeExecution(executionId) {
