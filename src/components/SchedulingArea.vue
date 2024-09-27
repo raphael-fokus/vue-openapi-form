@@ -10,7 +10,7 @@
       <!-- Task list with drop areas and worker dropdown -->
       <div class="task-list">
         <div v-for="(task, index) in selectedJob.tasks" :key="index" class="task-entry">
-          <strong>{{ task.worker?.workerType || 'Unassigned' }}/{{ task.action }}:</strong>
+          <strong>{{ getWorkerDisplay(task) }}/{{ task.action }}:</strong>
           <div class="task-content">
             <!-- Draggable drop zone for workers -->
             <Draggable :list="[task.worker ? task.worker : {}]" :options="{ group: 'workers', put: true, pull: false }"
@@ -27,11 +27,20 @@
                 <i class="fa fa-caret-down"></i>
               </button>
 
-              <!-- Worker selection dropdown -->
+              <!-- Worker selection dropdown with search, sort, and filter -->
               <div v-if="dropdownVisible[index]" class="worker-dropdown">
+                <input v-model="searchQuery" type="text" placeholder="Search workers..." class="worker-search-input" />
+                <div class="worker-filters">
+                  <label>Sort by:</label>
+                  <select v-model="selectedSortOption" class="worker-sort-filter">
+                    <option value="name">Name</option>
+                    <option value="status">Connection Status</option>
+                  </select>
+                </div>
                 <ul>
-                  <li v-for="worker in filterWorkersByTaskType(task.worker.workerType)" :key="worker.workerId" @click="selectWorkerForTask(worker, task)">
-                    {{ worker.workerName }} ({{ worker.workerType }})
+                  <li v-for="worker in filteredAndSortedWorkers(task.worker.workerType)" :key="worker.workerId"
+                    @click="selectWorkerForTask(worker, task)">
+                    {{ getDropdownWorkerDisplay(worker) }}
                   </li>
                 </ul>
               </div>
@@ -54,6 +63,9 @@
   </div>
 </template>
 
+
+
+
 <script>
 import Draggable from 'vuedraggable';
 
@@ -74,7 +86,9 @@ export default {
   data() {
     return {
       scheduledDate: '',
-      dropdownVisible: {} // Track which dropdowns are visible
+      dropdownVisible: {}, // Track which dropdowns are visible
+      searchQuery: '', // For searching workers
+      selectedSortOption: 'name', // Sort option (name or status)
     };
   },
   computed: {
@@ -109,8 +123,23 @@ export default {
       }
       return scheduledDate;
     },
-    filterWorkersByTaskType(workerType) {
-      return this.availableWorkers.filter(worker => worker.workerType === workerType && worker.workerType !== 'MANAGER');
+    // Apply search, sort, and filter logic
+    filteredAndSortedWorkers(workerType) {
+      let filteredWorkers = this.availableWorkers
+        .filter(worker => worker.workerType === workerType && worker.workerType !== 'MANAGER' && worker.workerType !== 'ADMIN')
+        .filter(worker => {
+          const matchesSearch = worker.workerName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            worker.workerId.toLowerCase().includes(this.searchQuery.toLowerCase());
+          return matchesSearch;
+        });
+
+      if (this.selectedSortOption === 'name') {
+        filteredWorkers.sort((a, b) => a.workerName.localeCompare(b.workerName));
+      } else if (this.selectedSortOption === 'status') {
+        filteredWorkers.sort((a, b) => (a.connected === b.connected) ? 0 : a.connected ? -1 : 1);
+      }
+
+      return filteredWorkers;
     },
     toggleDropdown(index) {
       this.dropdownVisible[index] = !this.dropdownVisible[index];
@@ -133,8 +162,25 @@ export default {
       } else {
         console.log('No worker dropped');
       }
-    }
+    },
+    // Show worker type, name, and connection status (with '?' if unassigned)
+  getWorkerDisplay(task) {
+    const worker = task.worker;
+    const workerType = worker && worker.workerType === 'MEASURING' && worker.workerInstance !== undefined
+      ? `${worker.workerType}-${worker.workerInstance}`
+      : worker ? worker.workerType : task.workerType || 'Unassigned';
+
+    const statusIcon = worker && worker.workerName ? (worker.connected ? '✔️' : '⚠️') : '?';
+    
+    return `${workerType} (${statusIcon})`;
   },
+  
+  // Separate display for the worker dropdown to include worker name
+  getDropdownWorkerDisplay(worker) {
+    const statusIcon = worker.connected ? '✔️' : '⚠️';
+    return `${worker.workerName} (${statusIcon})`;
+  }
+},
   mounted() {
     this.scheduledDate = this.getLocalTimeInGMT2().toISOString().slice(0, 16);
   }
@@ -157,7 +203,7 @@ export default {
 .task-list {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Center align tasks */
+  align-items: center;
   width: 100%;
 }
 
@@ -166,7 +212,7 @@ export default {
   padding: 8px;
   border-radius: 5px;
   border: 1px solid #ccc;
-  width: 60%; /* Set the same width as task-drop-area for better alignment */
+  width: 60%;
 }
 
 .datetime-picker-container {
@@ -177,19 +223,19 @@ export default {
 
 .scheduling-actions {
   display: flex;
-  justify-content: center; /* Center the actions */
+  justify-content: center;
   margin-top: 20px;
 }
 
 .task-entry {
-  width: 60%; /* Set a consistent width */
+  width: 60%;
   margin-bottom: 20px;
 }
 
 .task-content {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Ensure proper spacing between dropzone and dropdown */
+  justify-content: space-between;
 }
 
 .task-drop-area {
@@ -220,7 +266,7 @@ export default {
   border: 1px solid #ccc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1;
-  width: 200px;
+  width: 250px;
 }
 
 .worker-dropdown ul {
@@ -236,5 +282,20 @@ export default {
 
 .worker-dropdown li:hover {
   background-color: #eee;
+}
+
+.worker-search-input {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+}
+
+.worker-filters {
+  padding: 10px;
+}
+
+.worker-sort-filter {
+  width: 100%;
+  padding: 5px;
 }
 </style>

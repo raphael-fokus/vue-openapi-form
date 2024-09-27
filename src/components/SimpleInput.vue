@@ -80,17 +80,6 @@
         {{ validationOb.errors[0] }}
       </span>
     </template>
-
-    <!-- <div v-if="ui.tag === 'checkbox'" class="field">
-      <label>Switch rounded default</label>
-      <input
-        type="checkbox"
-        name="switchRoundedDefault"
-        class="switch is-rounded"
-        v-model="modelData"
-      />
-    </div> -->
-    <!-- <p class="help is-danger">This username is available</p> -->
   </div>
 </template>
 
@@ -126,6 +115,7 @@ export default defineComponent({
       labelShow: false,
       isIntegerSetToNull: false,
       isMultilineValue: false,
+      inputData: this.modelValue, // Renamed from modelData to inputData
     };
   },
 
@@ -138,10 +128,18 @@ export default defineComponent({
         new Date().valueOf()
       )}`;
     },
+    modelData: {
+      get() {
+        return this.modelValue;
+      },
+      set(value) {
+        this.$emit('update:modelValue', value);
+      },
+    },
   },
 
   watch: {
-    modelValue: {
+    inputData: {
       immediate: true,
       deep: true,
       handler(newVal, oldVal) {
@@ -176,7 +174,6 @@ export default defineComponent({
     },
   },
 
-
   mounted() {
     if (this.modelData) this.labelShow = true;
     this.$refs.inputField?.addEventListener('keydown', this.handleKeyDownEvent);
@@ -188,15 +185,12 @@ export default defineComponent({
     );
   },
   methods: {
-    // to float up label when input is focused
     triggerInput() {
       this.labelShow = true;
     },
-    // to float down label when input is unfocused and value field is empty
     unTriggerInput() {
       if (!this.modelData) this.labelShow = false;
     },
-    // to float up label and input field is focused when label is clicked in placeholder mode
     focusInput() {
       this.labelShow = true;
       const inputField = this.$refs.inputField;
@@ -215,7 +209,7 @@ export default defineComponent({
       if (pasteData.includes('\n')) {
         this.isMultilineValue = true;
 
-        this.modelData = finalData;
+        this.inputData = finalData;
       }
     },
     handleKeyDownEvent(evt) {
@@ -226,17 +220,17 @@ export default defineComponent({
 
         this.isMultilineValue = true;
 
-        this.modelData = finalData;
+        this.inputData = finalData;
       }
     },
 
     updatedModelDataAfterPasteAndKeyDown(el, addedData) {
       const { selectionStart, selectionEnd } = el;
 
-      const prefix = this.modelData.substring(0, selectionStart);
-      const suffix = this.modelData.substring(
+      const prefix = this.inputData.substring(0, selectionStart);
+      const suffix = this.inputData.substring(
         selectionEnd,
-        this.modelData.length
+        this.inputData.length
       );
 
       addedData = addedData ? addedData : '\n';
