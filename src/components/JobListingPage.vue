@@ -33,7 +33,7 @@
 import JobList from './JobList.vue';
 import SchedulingArea from './SchedulingArea.vue';
 import WorkerList from './WorkerList.vue';
-import WorkerRegistration from './WorkerRegistration.vue'; // Import WorkerRegistration component
+import WorkerRegistration from './WorkerRegistration.vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
@@ -43,13 +43,13 @@ export default {
     JobList,
     SchedulingArea,
     WorkerList,
-    WorkerRegistration, // Register WorkerRegistration component
+    WorkerRegistration,
   },
   data() {
     return {
       selectedJob: null,
       availableWorkers: [],
-      isWorkerRegistrationVisible: false, // Control visibility of WorkerRegistration
+      isWorkerRegistrationVisible: false,
       baseUrl: import.meta.env.VITE_BASE_URL,
     };
   },

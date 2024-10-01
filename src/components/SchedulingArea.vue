@@ -71,35 +71,35 @@ import Draggable from 'vuedraggable';
 
 export default {
   components: {
-    Draggable
+    Draggable,
   },
   props: {
     selectedJob: {
       type: Object,
-      required: true
+      required: true,
     },
     availableWorkers: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
       scheduledDate: '',
-      dropdownVisible: {}, // Track which dropdowns are visible
-      searchQuery: '', // For searching workers
-      selectedSortOption: 'name', // Sort option (name or status)
+      dropdownVisible: {},
+      searchQuery: '',
+      selectedSortOption: 'name',
     };
   },
   computed: {
     currentDateTime() {
       return this.getLocalTimeInGMT2().toISOString().slice(0, 16);
-    }
+    },
   },
   methods: {
     getLocalTimeInGMT2() {
       const currentDate = new Date();
-      const offset = 2 * 60; // GMT+2 offset
+      const offset = 2 * 60;
       const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
       return localTime;
     },
@@ -110,7 +110,7 @@ export default {
       const formattedScheduledDate = this.formatScheduledDate(this.scheduledDate);
       const scheduleData = {
         job: this.selectedJob,
-        scheduledDate: formattedScheduledDate
+        scheduledDate: formattedScheduledDate,
       };
       this.$emit('execute-job', scheduleData);
     },
@@ -123,12 +123,17 @@ export default {
       }
       return scheduledDate;
     },
-    // Apply search, sort, and filter logic
     filteredAndSortedWorkers(workerType) {
       let filteredWorkers = this.availableWorkers
-        .filter(worker => worker.workerType === workerType && worker.workerType !== 'MANAGER' && worker.workerType !== 'ADMIN')
-        .filter(worker => {
-          const matchesSearch = worker.workerName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        .filter(
+          (worker) =>
+            worker.workerType === workerType &&
+            worker.workerType !== 'MANAGER' &&
+            worker.workerType !== 'ADMIN'
+        )
+        .filter((worker) => {
+          const matchesSearch =
+            worker.workerName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
             worker.workerId.toLowerCase().includes(this.searchQuery.toLowerCase());
           return matchesSearch;
         });
@@ -136,7 +141,7 @@ export default {
       if (this.selectedSortOption === 'name') {
         filteredWorkers.sort((a, b) => a.workerName.localeCompare(b.workerName));
       } else if (this.selectedSortOption === 'status') {
-        filteredWorkers.sort((a, b) => (a.connected === b.connected) ? 0 : a.connected ? -1 : 1);
+        filteredWorkers.sort((a, b) => (a.connected === b.connected ? 0 : a.connected ? -1 : 1));
       }
 
       return filteredWorkers;
@@ -145,45 +150,40 @@ export default {
       this.dropdownVisible[index] = !this.dropdownVisible[index];
     },
     selectWorkerForTask(worker, task) {
-      task.worker = { ...worker };
-      this.dropdownVisible = {}; // Close all dropdowns after selecting a worker
+      task.worker = worker; // Assign by reference
+      this.dropdownVisible = {};
       this.selectedJob.tasks = [...this.selectedJob.tasks];
     },
     onWorkerDrop(event, task) {
       const droppedElement = event.added?.element;
       if (droppedElement) {
-        task.worker = {
-          workerId: droppedElement.workerId,
-          workerName: droppedElement.workerName,
-          workerType: droppedElement.workerType,
-          refSettingId: droppedElement.refSettingId || ''
-        };
+        task.worker = droppedElement; // Assign by reference
         this.selectedJob.tasks = [...this.selectedJob.tasks];
       } else {
         console.log('No worker dropped');
       }
     },
-    // Show worker type, name, and connection status (with '?' if unassigned)
-  getWorkerDisplay(task) {
-    const worker = task.worker;
-    const workerType = worker && worker.workerType === 'MEASURING' && worker.workerInstance !== undefined
-      ? `${worker.workerType}-${worker.workerInstance}`
-      : worker ? worker.workerType : task.workerType || 'Unassigned';
+    getWorkerDisplay(task) {
+      const worker = task.worker;
+      const workerType =
+        worker && worker.workerType === 'MEASURING' && worker.workerInstance !== undefined
+          ? `${worker.workerType}-${worker.workerInstance}`
+          : worker
+          ? worker.workerType
+          : task.workerType || 'Unassigned';
 
-    const statusIcon = worker && worker.workerName ? (worker.connected ? '✔️' : '⚠️') : '?';
-    
-    return `${workerType} (${statusIcon})`;
+      const statusIcon = worker && worker.workerName ? (worker.connected ? '✔️' : '⚠️') : '?';
+
+      return `${workerType} (${statusIcon})`;
+    },
+    getDropdownWorkerDisplay(worker) {
+      const statusIcon = worker.connected ? '✔️' : '⚠️';
+      return `${worker.workerName} (${statusIcon})`;
+    },
   },
-  
-  // Separate display for the worker dropdown to include worker name
-  getDropdownWorkerDisplay(worker) {
-    const statusIcon = worker.connected ? '✔️' : '⚠️';
-    return `${worker.workerName} (${statusIcon})`;
-  }
-},
   mounted() {
     this.scheduledDate = this.getLocalTimeInGMT2().toISOString().slice(0, 16);
-  }
+  },
 };
 </script>
 

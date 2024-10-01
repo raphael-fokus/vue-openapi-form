@@ -10,10 +10,14 @@
       </p>
     </div>
 
-    <!-- Draggable List of Workers (connected and unconnected) excluding ADMIN workers -->
-    <draggable v-if="sortedWorkers.length" :list="sortedWorkers"
-      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }" item-key="workerId"
-      class="draggable-worker-list">
+    <!-- Draggable List of Workers -->
+    <draggable
+      v-if="sortedWorkers.length"
+      :list="sortedWorkers"
+      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }"
+      item-key="workerId"
+      class="draggable-worker-list"
+    >
       <template #item="{ element }">
         <div class="listEntry" :class="{ connected: element.connected }">
           <div class="worker-details">
@@ -23,12 +27,24 @@
               <span v-if="element.connected" class="icon-connected">✔️</span>
               <span v-else class="icon-warning">⚠️</span>
             </p>
-            <input type="text" v-model="refSetting[element.workerId]" placeholder="refSettingId"
-              class="input is-primary ref-setting-input" />
+            <input
+              type="text"
+              v-model="element.refSettingId"
+              placeholder="refSettingId"
+              class="input is-primary ref-setting-input"
+            />
           </div>
           <div class="worker-actions">
-            <button v-if="!element.connected" @click="connectWorker(element)" class="button is-primary">Connect</button>
-            <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">Remove</button>
+            <button
+              v-if="!element.connected"
+              @click="connectWorker(element)"
+              class="button is-primary"
+            >
+              Connect
+            </button>
+            <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">
+              Remove
+            </button>
           </div>
         </div>
       </template>
@@ -44,7 +60,7 @@
 import draggable from 'vuedraggable';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
-import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
+import { v4 as uuidv4 } from 'uuid';
 
 export default {
   components: {
@@ -52,31 +68,22 @@ export default {
   },
   data() {
     return {
-      workers: [], // List of all workers (connected and unconnected)
-      refSetting: {},
-      newWorker: {
-        workerId: uuidv4(), // Automatically generate a UUID for the Worker ID
-        workerType: '', // Worker type now selected from dropdown
-        workerName: '',
-      },
-      registerButtonText: 'Register',
-      stateMessage: 'Not registered',
+      workers: [],
       baseUrl: import.meta.env.VITE_BASE_URL,
     };
   },
   computed: {
     sortedWorkers() {
-      // Filter out ADMIN workers and sort by connection status (connected first)
       return this.workers
         .filter((worker) => worker.workerType !== 'ADMIN')
         .sort((a, b) => (a.connected === b.connected ? 0 : a.connected ? -1 : 1));
     },
   },
   mounted() {
-    this.fetchWorkers(); // Fetch all registered workers on mount
+    this.fetchWorkers();
   },
   setup() {
-    const toast = useToast(); // Use the toast function here
+    const toast = useToast();
     return {
       toast,
     };
@@ -84,7 +91,6 @@ export default {
   watch: {
     workers: {
       handler(newVal) {
-        // Emit the list of workers whenever it's updated
         this.$emit('update-workers', newVal);
       },
       deep: true,
@@ -96,7 +102,10 @@ export default {
       axios
         .get(`${this.baseUrl}/v1/registration`)
         .then((response) => {
-          this.workers = response.data;
+          this.workers = response.data.map((worker) => ({
+            ...worker,
+            refSettingId: worker.refSettingId || '',
+          }));
         })
         .catch((error) => {
           this.toast.error('Error fetching workers:', error);
@@ -108,7 +117,6 @@ export default {
       );
 
       socket.onopen = () => {
-        this.stateMessage = `Worker ${worker.workerName} connected successfully!`;
         this.toast.success(`Worker ${worker.workerName} connected successfully!`);
 
         const workerIndex = this.workers.findIndex((w) => w.workerId === worker.workerId);
@@ -118,11 +126,10 @@ export default {
       };
 
       socket.onclose = () => {
-        this.stateMessage = `Worker ${worker.workerName} disconnected.`;
+        this.toast.error(`Worker ${worker.workerName} disconnected.`);
       };
 
       socket.onerror = () => {
-        this.stateMessage = 'Connection error.';
         this.toast.error('Connection error.');
       };
     },
@@ -132,11 +139,9 @@ export default {
           .delete(`${this.baseUrl}/v1/registration/${workerId}`)
           .then(() => {
             this.workers = this.workers.filter((worker) => worker.workerId !== workerId);
-            this.stateMessage = 'Worker removed successfully.';
             this.toast.success('Worker removed successfully.');
           })
           .catch((error) => {
-            this.stateMessage = 'Failed to remove worker.';
             this.toast.error('Failed to remove worker.');
           });
       }
