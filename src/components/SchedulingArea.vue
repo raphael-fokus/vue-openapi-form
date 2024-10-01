@@ -169,8 +169,8 @@ export default {
         worker && worker.workerType === 'MEASURING' && worker.workerInstance !== undefined
           ? `${worker.workerType}-${worker.workerInstance}`
           : worker
-          ? worker.workerType
-          : task.workerType || 'Unassigned';
+            ? worker.workerType
+            : task.workerType || 'Unassigned';
 
       const statusIcon = worker && worker.workerName ? (worker.connected ? '✔️' : '⚠️') : '?';
 

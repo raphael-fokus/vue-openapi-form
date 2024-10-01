@@ -4,7 +4,8 @@
     <job-list @schedule-job="scheduleJob" />
 
     <!-- Scheduling Area with WorkerList embedded within it -->
-    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" :available-workers="availableWorkers" @cancel-schedule="cancelSchedule" @execute-job="executeJob" />
+    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" :available-workers="availableWorkers"
+      @cancel-schedule="cancelSchedule" @execute-job="executeJob" />
 
     <!-- WorkerList to show connected and registered workers -->
     <worker-list @update-workers="updateAvailableWorkers" />
@@ -117,7 +118,7 @@ export default {
 
 .icon-buttons {
   display: flex;
-  justify-content: space-between; /* Position one button on the left and one on the right */
+  justify-content: space-between;
   margin-top: 20px;
 }
 

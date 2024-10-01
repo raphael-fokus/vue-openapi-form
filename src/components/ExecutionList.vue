@@ -43,7 +43,7 @@ export default {
     return {
       executions: [],
       baseUrl: import.meta.env.VITE_BASE_URL,
-      pollInterval: null, // Variable to store the interval ID
+      pollInterval: null, 
       refreshInterval: 5000 // 5 seconds refresh interval
     };
   },
@@ -57,12 +57,12 @@ export default {
   },
 
   mounted() {
-    this.fetchExecutions(); // Initial fetch
-    this.startPollingExecutions(); // Start polling on component mount
+    this.fetchExecutions();
+    this.startPollingExecutions();
   },
 
   beforeUnmount() {
-    this.stopPollingExecutions(); // Stop polling when the component is unmounted
+    this.stopPollingExecutions();
   },
 
   methods: {
@@ -76,14 +76,12 @@ export default {
         });
     },
 
-    // Start polling the executions API
     startPollingExecutions() {
       this.pollInterval = setInterval(() => {
-        this.fetchExecutions(); // Fetch executions every X seconds
+        this.fetchExecutions();
       }, this.refreshInterval);
     },
 
-    // Stop polling the executions API
     stopPollingExecutions() {
       if (this.pollInterval) {
         clearInterval(this.pollInterval);
@@ -104,11 +102,11 @@ export default {
           axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
             .then(() => {
               this.executions = this.executions.filter(exe => exe.executionId !== executionId);
-              this.toast.success('Execution removed successfully');  // Success toast
+              this.toast.success('Execution removed successfully'); 
             })
             .catch(error => {
               console.error("Error removing execution:", error);
-              this.toast.error('Error removing execution');  // Error toast
+              this.toast.error('Error removing execution'); 
             });
           Swal.fire('Removed!', 'The execution has been removed.', 'success');
         }
