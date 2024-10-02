@@ -4,10 +4,14 @@
     <div v-if="executions.length">
       <div v-for="exe in executions" :key="exe.executionId" class="listEntry">
         <div class="execution-details">
-          <p><strong>{{ formatScheduledDate(exe.date) }}</strong> - JobID/ExeID: {{ exe.job.jobName }} ({{ exe.job.jobId
-            }} / {{ exe.executionId }})</p>
-          <p><strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} / {{
-            exe.overallTasksSteps }}</p>
+          <p>
+            <strong>{{ formatScheduledDate(exe.scheduledDate) }}</strong> - JobID/ExeID:
+            {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})
+          </p>
+          <p>
+            <strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} /
+            {{ exe.overallTasksSteps }}
+          </p>
 
           <!-- Progress Bar for task execution -->
           <div class="progress-bar">
@@ -15,10 +19,11 @@
             </div>
           </div>
 
-          <p><strong>Workers:</strong>
-            <span v-for="task in exe.job.tasks" :key="task.worker.workerId">
+          <p>
+            <strong>Workers:</strong>
+            <span v-for="(task, index) in exe.job.tasks" :key="task.worker.workerId">
               {{ task.worker.workerType }} - {{ task.worker.workerName }}
-              <span v-if="!isLastTask(task, exe.job.tasks)">, </span>
+              <span v-if="index !== exe.job.tasks.length - 1">, </span>
             </span>
           </p>
         </div>
@@ -43,16 +48,15 @@ export default {
     return {
       executions: [],
       baseUrl: import.meta.env.VITE_BASE_URL,
-      pollInterval: null, 
-      refreshInterval: 5000 // 5 seconds refresh interval
+      pollInterval: null,
+      refreshInterval: 5000, // 5 seconds refresh interval
     };
   },
 
   setup() {
     const toast = useToast();
-
     return {
-      toast
+      toast,
     };
   },
 
@@ -67,12 +71,13 @@ export default {
 
   methods: {
     fetchExecutions() {
-      axios.get(`${this.baseUrl}/v1/execution`)
-        .then(response => {
+      axios
+        .get(`${this.baseUrl}/v1/execution`)
+        .then((response) => {
           this.executions = response.data;
         })
-        .catch(error => {
-          console.error("Error fetching executions:", error);
+        .catch((error) => {
+          console.error('Error fetching executions:', error);
         });
     },
 
@@ -99,42 +104,35 @@ export default {
         cancelButtonText: 'Cancel',
       }).then((result) => {
         if (result.isConfirmed) {
-          axios.delete(`${this.baseUrl}/v1/execution/${executionId}`)
+          axios
+            .delete(`${this.baseUrl}/v1/execution/${executionId}`)
             .then(() => {
-              this.executions = this.executions.filter(exe => exe.executionId !== executionId);
-              this.toast.success('Execution removed successfully'); 
+              this.executions = this.executions.filter((exe) => exe.executionId !== executionId);
+              this.toast.success('Execution removed successfully');
             })
-            .catch(error => {
-              console.error("Error removing execution:", error);
-              this.toast.error('Error removing execution'); 
+            .catch((error) => {
+              console.error('Error removing execution:', error);
+              this.toast.error('Error removing execution');
             });
           Swal.fire('Removed!', 'The execution has been removed.', 'success');
         }
       });
     },
-    isLastTask(task, tasks) {
-      return tasks.indexOf(task) === tasks.length - 1;
-    },
-
-    getLocalTimeInGMT2() {
-      const currentDate = new Date();
-      const offset = 2 * 60;
-      const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
-      return localTime;
-    },
 
     formatScheduledDate(scheduledDate) {
-      const localTime = this.getLocalTimeInGMT2();
-      return localTime.toISOString().slice(0, 16);
+      if (!scheduledDate) return 'No Date Provided';
+      const date = new Date(scheduledDate);
+      return date.toLocaleString(); // Adjust format as needed
     },
 
     getProgressPercentage(currentTaskNo, overallTasksSteps) {
       const percentage = (currentTaskNo / overallTasksSteps) * 100;
       return `${percentage}%`;
-    }
-  }
+    },
+  },
 };
 </script>
+
 
 <style scoped>
 .executions-container {

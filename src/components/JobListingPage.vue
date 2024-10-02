@@ -80,6 +80,7 @@ export default {
     updateAvailableWorkers(workers) {
       this.availableWorkers = workers;
     },
+    // In JobListingPage.vue
     async executeJob(scheduleData) {
       let { scheduledDate } = scheduleData;
       if (!scheduledDate) {
@@ -103,6 +104,7 @@ export default {
         this.toast.error('Failed to execute job. Please try again.');
       }
     },
+
   },
 };
 </script>
