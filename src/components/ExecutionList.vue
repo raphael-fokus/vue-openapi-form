@@ -30,6 +30,7 @@
         <div class="execution-actions">
           <button @click="removeExecution(exe.executionId)" class="button is-danger ml-10">Cancel/Remove</button>
         </div>
+
       </div>
     </div>
     <div v-else class="no-executions">
@@ -42,59 +43,29 @@
 import Swal from 'sweetalert2';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import { computed } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
-  data() {
-    return {
-      executions: [],
-      baseUrl: import.meta.env.VITE_BASE_URL,
-      pollInterval: null,
-      refreshInterval: 5000, // 5 seconds refresh interval
-    };
-  },
-
   setup() {
+    const store = useStore();
     const toast = useToast();
-    return {
-      toast,
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+
+    const executions = computed(() => store.getters.executions);
+
+    const formatScheduledDate = (scheduledDate) => {
+      if (!scheduledDate) return 'No Date Provided';
+      const date = new Date(scheduledDate);
+      return date.toLocaleString(); // Adjust format as needed
     };
-  },
 
-  mounted() {
-    this.fetchExecutions();
-    this.startPollingExecutions();
-  },
+    const getProgressPercentage = (currentTaskNo, overallTasksSteps) => {
+      const percentage = (currentTaskNo / overallTasksSteps) * 100;
+      return `${percentage}%`;
+    };
 
-  beforeUnmount() {
-    this.stopPollingExecutions();
-  },
-
-  methods: {
-    fetchExecutions() {
-      axios
-        .get(`${this.baseUrl}/v1/execution`)
-        .then((response) => {
-          this.executions = response.data;
-        })
-        .catch((error) => {
-          console.error('Error fetching executions:', error);
-        });
-    },
-
-    startPollingExecutions() {
-      this.pollInterval = setInterval(() => {
-        this.fetchExecutions();
-      }, this.refreshInterval);
-    },
-
-    stopPollingExecutions() {
-      if (this.pollInterval) {
-        clearInterval(this.pollInterval);
-        this.pollInterval = null;
-      }
-    },
-
-    removeExecution(executionId) {
+    const removeExecution = (executionId) => {
       Swal.fire({
         title: 'Are you sure?',
         text: 'Do you want to remove this execution?',
@@ -105,30 +76,27 @@ export default {
       }).then((result) => {
         if (result.isConfirmed) {
           axios
-            .delete(`${this.baseUrl}/v1/execution/${executionId}`)
+            .delete(`${baseUrl}/v1/execution/${executionId}`)
             .then(() => {
-              this.executions = this.executions.filter((exe) => exe.executionId !== executionId);
-              this.toast.success('Execution removed successfully');
+              // Remove execution from the store
+              store.commit('REMOVE_EXECUTION', executionId);
+              toast.success('Execution removed successfully');
             })
             .catch((error) => {
               console.error('Error removing execution:', error);
-              this.toast.error('Error removing execution');
+              toast.error('Error removing execution');
             });
           Swal.fire('Removed!', 'The execution has been removed.', 'success');
         }
       });
-    },
+    };
 
-    formatScheduledDate(scheduledDate) {
-      if (!scheduledDate) return 'No Date Provided';
-      const date = new Date(scheduledDate);
-      return date.toLocaleString(); // Adjust format as needed
-    },
-
-    getProgressPercentage(currentTaskNo, overallTasksSteps) {
-      const percentage = (currentTaskNo / overallTasksSteps) * 100;
-      return `${percentage}%`;
-    },
+    return {
+      executions,
+      formatScheduledDate,
+      getProgressPercentage,
+      removeExecution,
+    };
   },
 };
 </script>

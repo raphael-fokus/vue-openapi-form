@@ -47,16 +47,17 @@ export default {
   background-color: #176bb5;
   border: none;
   color: white;
-  padding: 10px 20px;
+  padding: 10px;
   font-size: 16px;
   border-radius: 50%;
   cursor: pointer;
-  margin-right: auto;
-  margin-left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 45px;
+  height: 45px;
 }
+
 
 .icon-button:hover .tooltip {
   opacity: 1;

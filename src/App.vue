@@ -85,10 +85,11 @@
 
 <script>
 import Schemas from '@/json-schema.js';
-import { defineAsyncComponent, defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import { useStore } from 'vuex';
 
 export default defineComponent({
   name: 'App',
@@ -121,6 +122,7 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const toast = useToast();
+    const store = useStore();
 
     const goToJobListing = () => {
       router.push({ name: 'JobListing' });
@@ -130,10 +132,15 @@ export default defineComponent({
       router.push({ name: 'ExecutionList' });
     };
 
+    // Dispatch the action to register the admin worker and establish WebSocket connection
+    onMounted(() => {
+      store.dispatch('registerAdminWorker');
+    });
+
     return {
       goToJobListing,
       goToExecutionList,
-      toast
+      toast,
     };
   },
   created() {
@@ -264,12 +271,13 @@ export default defineComponent({
     getPersistedJsonSchema() {
       const persistedSchema = this.getPersistedSchema();
       return persistedSchema ? JSON.parse(JSON.stringify(persistedSchema.schema)) : {};
-    }
+    },
   },
 });
 </script>
 
 <style lang="scss" scoped>
+/* Existing styles remain unchanged */
 .ac-navbar-area {
   &.is-full {
     margin-left: 0;

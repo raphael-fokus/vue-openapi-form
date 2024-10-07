@@ -11,13 +11,9 @@
     </div>
 
     <!-- Draggable List of Workers -->
-    <draggable
-      v-if="sortedWorkers.length"
-      :list="sortedWorkers"
-      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }"
-      item-key="workerId"
-      class="draggable-worker-list"
-    >
+    <draggable v-if="sortedWorkers.length" :list="sortedWorkers"
+      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }" item-key="workerId"
+      class="draggable-worker-list">
       <template #item="{ element }">
         <div class="listEntry" :class="{ connected: element.connected }">
           <div class="worker-details">
@@ -27,19 +23,11 @@
               <span v-if="element.connected" class="icon-connected">✔️</span>
               <span v-else class="icon-warning">⚠️</span>
             </p>
-            <input
-              type="text"
-              v-model="element.refSettingId"
-              placeholder="refSettingId"
-              class="input is-primary ref-setting-input"
-            />
+            <input type="text" v-model="element.refSettingId" placeholder="refSettingId"
+              class="input is-primary ref-setting-input" />
           </div>
           <div class="worker-actions">
-            <button
-              v-if="!element.connected"
-              @click="connectWorker(element)"
-              class="button is-primary"
-            >
+            <button v-if="!element.connected" @click="connectWorker(element)" class="button is-primary">
               Connect
             </button>
             <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">
@@ -58,94 +46,55 @@
 
 <script>
 import draggable from 'vuedraggable';
-import axios from 'axios';
 import { useToast } from 'vue-toastification';
-import { v4 as uuidv4 } from 'uuid';
+import { computed, ref } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
   components: {
     draggable,
   },
-  data() {
-    return {
-      workers: [],
-      baseUrl: import.meta.env.VITE_BASE_URL,
-    };
-  },
-  computed: {
-    sortedWorkers() {
-      return this.workers
+  setup() {
+    const store = useStore();
+    const toast = useToast();
+
+    const workers = computed(() => store.getters.workers);
+
+    const sortedWorkers = computed(() => {
+      return workers.value
         .filter((worker) => worker.workerType !== 'ADMIN')
         .sort((a, b) => (a.connected === b.connected ? 0 : a.connected ? -1 : 1));
-    },
-  },
-  mounted() {
-    this.fetchWorkers();
-  },
-  setup() {
-    const toast = useToast();
-    return {
-      toast,
-    };
-  },
-  watch: {
-    workers: {
-      handler(newVal) {
-        this.$emit('update-workers', newVal);
-      },
-      deep: true,
-      immediate: true,
-    },
-  },
-  methods: {
-    fetchWorkers() {
-      axios
-        .get(`${this.baseUrl}/v1/registration`)
-        .then((response) => {
-          this.workers = response.data.map((worker) => ({
-            ...worker,
-            refSettingId: worker.refSettingId || '',
-          }));
+    });
+
+    const connectWorker = (worker) => {
+      store
+        .dispatch('connectWorker', worker) // Dispatch an action to handle worker connection
+        .then(() => {
+          toast.success(`Worker ${worker.workerName} connected successfully!`);
         })
-        .catch((error) => {
-          this.toast.error('Error fetching workers:', error);
+        .catch(() => {
+          toast.error('Connection error.');
         });
-    },
-    connectWorker(worker) {
-      const socket = new WebSocket(
-        `ws://${location.host.replace('3000', '3003')}/v1/connection?workerId=${worker.workerId}`
-      );
+    };
 
-      socket.onopen = () => {
-        this.toast.success(`Worker ${worker.workerName} connected successfully!`);
-
-        const workerIndex = this.workers.findIndex((w) => w.workerId === worker.workerId);
-        if (workerIndex !== -1) {
-          this.workers[workerIndex].connected = true;
-        }
-      };
-
-      socket.onclose = () => {
-        this.toast.error(`Worker ${worker.workerName} disconnected.`);
-      };
-
-      socket.onerror = () => {
-        this.toast.error('Connection error.');
-      };
-    },
-    removeWorker(workerId) {
+    const removeWorker = (workerId) => {
       if (confirm('Are you sure you want to remove this worker?')) {
-        axios
-          .delete(`${this.baseUrl}/v1/registration/${workerId}`)
+        store
+          .dispatch('removeWorker', workerId) // Dispatch an action to remove worker
           .then(() => {
-            this.workers = this.workers.filter((worker) => worker.workerId !== workerId);
-            this.toast.success('Worker removed successfully.');
+            toast.success('Worker removed successfully.');
           })
-          .catch((error) => {
-            this.toast.error('Failed to remove worker.');
+          .catch(() => {
+            toast.error('Failed to remove worker.');
           });
       }
-    },
+    };
+
+    return {
+      sortedWorkers,
+      connectWorker,
+      removeWorker,
+    };
   },
 };
 </script>
@@ -159,58 +108,50 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.worker-legend {
+h2 {
   margin-bottom: 20px;
-  font-size: 16px;
-  color: #666;
+  font-size: 24px;
+  color: #333;
 }
 
 .listEntry {
   background-color: #fff;
-  padding: 20px;
-  margin-bottom: 15px;
+  padding: 15px;
+  margin-bottom: 10px;
   border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.connected .worker-details strong {
-  color: green;
-}
-
-.not-connected .worker-details strong {
-  color: red;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .worker-details {
-  flex: 1;
-  font-size: 16px;
-  color: #333;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  justify-content: space-between;
+  align-items: center;
+  width: 70%;
+  /* Adjust width to allow for worker actions */
 }
 
 .worker-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  width: 30%;
+}
+
+.button {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.ml-10 {
+  margin-left: 10px;
 }
 
 .ref-setting-input {
-  width: 270px;
-}
-
-.button.is-primary {
-  color: white;
-  border: none;
-}
-
-.button.is-danger {
-  color: white;
-  border: none;
+  width: 275px;
+  margin-top: 10px;
 }
 
 .no-workers {

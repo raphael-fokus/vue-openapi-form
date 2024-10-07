@@ -9,11 +9,11 @@
 
       <!-- Task list with drop areas and worker dropdown -->
       <div class="task-list">
-        <div v-for="(task, index) in selectedJob.tasks" :key="index" class="task-entry">
+        <div v-for="(task, taskIndex) in selectedJob.tasks" :key="taskIndex" class="task-entry">
           <strong>{{ getWorkerDisplay(task) }}/{{ task.action }}:</strong>
           <div class="task-content">
             <!-- Draggable drop zone for workers -->
-            <Draggable :list="[task.worker ? task.worker : {}]" :options="{ group: 'workers', put: true, pull: false }"
+            <Draggable :list="task.worker ? [task.worker] : []" :options="{ group: 'workers', put: true, pull: false }"
               class="task-drop-area" @change="onWorkerDrop($event, task)" item-key="workerId">
               <template #item="{ element }">
                 <span v-if="element && element.workerName">{{ element.workerName }}</span>
@@ -23,12 +23,12 @@
 
             <!-- Dropdown icon for selecting available workers -->
             <div class="worker-dropdown-container">
-              <button class="dropdown-button" @click="toggleDropdown(index)">
+              <button class="dropdown-button" @click="toggleDropdown(taskIndex)">
                 <i class="fa fa-caret-down"></i>
               </button>
 
               <!-- Worker selection dropdown with search, sort, and filter -->
-              <div v-if="dropdownVisible[index]" class="worker-dropdown">
+              <div v-if="dropdownVisible[taskIndex]" class="worker-dropdown">
                 <input v-model="searchQuery" type="text" placeholder="Search workers..." class="worker-search-input" />
                 <div class="worker-filters">
                   <label>Sort by:</label>
@@ -38,8 +38,8 @@
                   </select>
                 </div>
                 <ul>
-                  <li v-for="worker in filteredAndSortedWorkers(task.worker.workerType)" :key="worker.workerId"
-                    @click="selectWorkerForTask(worker, task)">
+                  <li v-for="worker in filteredAndSortedWorkers(task.worker ? task.worker.workerType : task.workerType)"
+                    :key="worker.workerId" @click="selectWorkerForTask(worker, task, taskIndex)">
                     {{ getDropdownWorkerDisplay(worker) }}
                   </li>
                 </ul>
@@ -63,11 +63,10 @@
   </div>
 </template>
 
-
-
-
 <script>
 import Draggable from 'vuedraggable';
+import { computed, ref } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
   components: {
@@ -78,53 +77,50 @@ export default {
       type: Object,
       required: true,
     },
-    availableWorkers: {
-      type: Array,
-      required: true,
-    },
   },
-  data() {
-    return {
-      scheduledDate: '',
-      dropdownVisible: {},
-      searchQuery: '',
-      selectedSortOption: 'name',
-    };
-  },
-  computed: {
-    currentDateTime() {
-      return this.getLocalTimeInGMT2().toISOString().slice(0, 16);
-    },
-  },
-  methods: {
-    getLocalTimeInGMT2() {
+  setup(props, { emit }) {
+    const store = useStore();
+
+    const scheduledDate = ref('');
+    const dropdownVisible = ref({});
+    const searchQuery = ref('');
+    const selectedSortOption = ref('name');
+
+    const workers = computed(() => store.getters.workers);
+
+    const currentDateTime = computed(() => {
+      return getLocalTimeInCurrentTimezone().toISOString().slice(0, 16);
+    });
+
+    function getLocalTimeInCurrentTimezone() {
       const currentDate = new Date();
-      const offset = 2 * 60;
-      const localTime = new Date(currentDate.getTime() + offset * 60 * 1000);
-      return localTime;
-    },
-    cancelSchedule() {
-      this.$emit('cancel-schedule');
-    },
-    executeJob() {
-      const formattedScheduledDate = this.formatScheduledDate(this.scheduledDate);
+      const timezoneOffsetInMinutes = currentDate.getTimezoneOffset(); // Get the local timezone offset in minutes
+      const adjustedDate = new Date(currentDate.getTime() - timezoneOffsetInMinutes * 60000); // Adjust the time
+      return adjustedDate;
+    }
+
+    function cancelSchedule() {
+      emit('cancel-schedule');
+    }
+
+    function executeJob() {
+      const formattedScheduledDate = formatScheduledDate(scheduledDate.value);
       const scheduleData = {
-        job: this.selectedJob,
-        scheduledDate: formattedScheduledDate,
+        job: props.selectedJob,
+        scheduledDate: formattedScheduledDate || null,
       };
-      this.$emit('execute-job', scheduleData);
-    },
-    formatScheduledDate(scheduledDate) {
-      if (!scheduledDate.includes(':00')) {
-        scheduledDate += ':00';
-      }
-      if (!scheduledDate.includes('Z')) {
-        scheduledDate += 'Z';
-      }
-      return scheduledDate;
-    },
-    filteredAndSortedWorkers(workerType) {
-      let filteredWorkers = this.availableWorkers
+      emit('execute-job', scheduleData);
+    }
+
+    function formatScheduledDate(scheduledDate) {
+      const date = new Date(scheduledDate);
+      return date.toISOString(); // Return the ISO format with the correct "date-time" format with "Z"
+    }
+
+    function filteredAndSortedWorkers(workerType) {
+      if (!workerType) return [];
+
+      let filteredWorkers = workers.value
         .filter(
           (worker) =>
             worker.workerType === workerType &&
@@ -133,37 +129,41 @@ export default {
         )
         .filter((worker) => {
           const matchesSearch =
-            worker.workerName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            worker.workerId.toLowerCase().includes(this.searchQuery.toLowerCase());
+            worker.workerName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            worker.workerId.toLowerCase().includes(searchQuery.value.toLowerCase());
           return matchesSearch;
         });
 
-      if (this.selectedSortOption === 'name') {
+      if (selectedSortOption.value === 'name') {
         filteredWorkers.sort((a, b) => a.workerName.localeCompare(b.workerName));
-      } else if (this.selectedSortOption === 'status') {
+      } else if (selectedSortOption.value === 'status') {
         filteredWorkers.sort((a, b) => (a.connected === b.connected ? 0 : a.connected ? -1 : 1));
       }
 
       return filteredWorkers;
-    },
-    toggleDropdown(index) {
-      this.dropdownVisible[index] = !this.dropdownVisible[index];
-    },
-    selectWorkerForTask(worker, task) {
+    }
+
+    function toggleDropdown(taskIndex) {
+      dropdownVisible.value[taskIndex] = !dropdownVisible.value[taskIndex];
+    }
+
+    function selectWorkerForTask(worker, task, taskIndex) {
       task.worker = worker; // Assign by reference
-      this.dropdownVisible = {};
-      this.selectedJob.tasks = [...this.selectedJob.tasks];
-    },
-    onWorkerDrop(event, task) {
+      dropdownVisible.value[taskIndex] = false;
+      props.selectedJob.tasks = [...props.selectedJob.tasks];
+    }
+
+    function onWorkerDrop(event, task) {
       const droppedElement = event.added?.element;
       if (droppedElement) {
         task.worker = droppedElement; // Assign by reference
-        this.selectedJob.tasks = [...this.selectedJob.tasks];
+        props.selectedJob.tasks = [...props.selectedJob.tasks];
       } else {
         console.log('No worker dropped');
       }
-    },
-    getWorkerDisplay(task) {
+    }
+
+    function getWorkerDisplay(task) {
       const worker = task.worker;
       const workerType =
         worker && worker.workerType === 'MEASURING' && worker.workerInstance !== undefined
@@ -175,17 +175,36 @@ export default {
       const statusIcon = worker && worker.workerName ? (worker.connected ? '✔️' : '⚠️') : '?';
 
       return `${workerType} (${statusIcon})`;
-    },
-    getDropdownWorkerDisplay(worker) {
+    }
+
+    function getDropdownWorkerDisplay(worker) {
       const statusIcon = worker.connected ? '✔️' : '⚠️';
       return `${worker.workerName} (${statusIcon})`;
-    },
-  },
-  mounted() {
-    this.scheduledDate = this.getLocalTimeInGMT2().toISOString().slice(0, 16);
+    }
+
+    scheduledDate.value = getLocalTimeInCurrentTimezone().toISOString().slice(0, 16);
+
+    return {
+      scheduledDate,
+      dropdownVisible,
+      searchQuery,
+      selectedSortOption,
+      currentDateTime,
+      getLocalTimeInCurrentTimezone,
+      cancelSchedule,
+      executeJob,
+      formatScheduledDate,
+      filteredAndSortedWorkers,
+      toggleDropdown,
+      selectWorkerForTask,
+      onWorkerDrop,
+      getWorkerDisplay,
+      getDropdownWorkerDisplay,
+    };
   },
 };
 </script>
+
 
 <style scoped>
 .scheduling-container {

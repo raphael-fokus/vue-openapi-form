@@ -7,11 +7,14 @@
           <div class="job-info">
             <span class="job-name"><strong>{{ job.jobName }}</strong></span>
             <span class="job-id"><i>({{ job.jobId }})</i></span>
-            <p>Contents: {{ job.streams.length }}, Tasks: {{ job.tasks.length }}</p>
+            
+            <!-- Check if streams exist before accessing length -->
+            <p>Contents: {{ job.streams ? job.streams.length : 0 }}, Tasks: {{ job.tasks ? job.tasks.length : 0 }}</p>
+
             <p class="task-sequence">
               Task Sequence:
-              <span v-for="task in job.tasks" :key="task.worker.workerId">
-                {{ task.worker.workerType }}/{{ task.action }}<span v-if="!isLastTask(task, job.tasks)">, </span>
+              <span v-for="(task, index) in job.tasks" :key="task.worker.workerId">
+                {{ task.worker.workerType }}/{{ task.action }}<span v-if="!isLastTask(index, job.tasks)">, </span>
               </span>
             </p>
           </div>
@@ -34,38 +37,24 @@
 <script>
 import Swal from 'sweetalert2';
 import { useToast } from 'vue-toastification';
+import axios from 'axios';
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
-  data() {
-    return {
-      jobs: [],
-      baseUrl: import.meta.env.VITE_BASE_URL
+  setup(props, { emit }) {
+    const store = useStore();
+    const toast = useToast();
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+
+    const jobs = computed(() => store.getters.jobs);
+
+    const scheduleJob = (job) => {
+      // Emit an event to the parent component to handle scheduling
+      emit('schedule-job', job);
     };
-  },
-  setup() {
-    const toast = useToast();
-    return { toast };
-  },
-  mounted() {
-    this.fetchJobs();
-    const toast = useToast();
-    return { toast };
-  },
-  methods: {
-    fetchJobs() {
-      this.$axios.get(`${this.baseUrl}/v1/measurement`)
-        .then(response => {
-          this.jobs = response.data;
-        })
-        .catch(error => {
-          console.error("Error fetching jobs:", error);
-          this.$toast.error("Error fetching jobs");
-        });
-    },
-    scheduleJob(job) {
-      this.$emit('schedule-job', job);
-    },
-    removeJob(jobId) {
+
+    const removeJob = (jobId) => {
       Swal.fire({
         title: 'Are you sure?',
         text: 'Do you want to remove this job?',
@@ -75,25 +64,35 @@ export default {
         cancelButtonText: 'Cancel',
       }).then((result) => {
         if (result.isConfirmed) {
-          this.$axios.delete(`${this.baseUrl}/v1/measurement/${jobId}`)
+          axios
+            .delete(`${baseUrl}/v1/measurement/${jobId}`)
             .then(() => {
-              this.jobs = this.jobs.filter(job => job.jobId !== jobId);
-              this.toast.success('Job removed successfully');
+              store.commit('REMOVE_JOB', jobId);
+              toast.success('Job removed successfully');
             })
-            .catch(error => {
-              console.error("Error removing job:", error);
-              this.toast.error('Failed to remove the job. Please try again.');
+            .catch((error) => {
+              console.error('Error removing job:', error);
+              toast.error('Failed to remove the job. Please try again.');
             });
           Swal.fire('Removed!', 'The job has been removed.', 'success');
         }
       });
-    },
-    isLastTask(task, tasks) {
-      return tasks.indexOf(task) === tasks.length - 1;
-    }
-  }
+    };
+
+    const isLastTask = (index, tasks) => {
+      return index === tasks.length - 1;
+    };
+
+    return {
+      jobs,
+      scheduleJob,
+      removeJob,
+      isLastTask,
+    };
+  },
 };
 </script>
+
 
 <style scoped>
 .jobs-container {

@@ -3,12 +3,12 @@
     <h1>Jobs & Scheduling</h1>
     <job-list @schedule-job="scheduleJob" />
 
-    <!-- Scheduling Area with WorkerList embedded within it -->
-    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" :available-workers="availableWorkers"
-      @cancel-schedule="cancelSchedule" @execute-job="executeJob" />
+    <!-- Scheduling Area -->
+    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
+      @execute-job="executeJob" />
 
     <!-- WorkerList to show connected and registered workers -->
-    <worker-list @update-workers="updateAvailableWorkers" />
+    <worker-list />
 
     <!-- Icon buttons for worker registration and executions -->
     <div class="icon-buttons">
@@ -38,6 +38,8 @@ import WorkerRegistration from './WorkerRegistration.vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
 
 export default {
   components: {
@@ -46,42 +48,32 @@ export default {
     WorkerList,
     WorkerRegistration,
   },
-  data() {
-    return {
-      selectedJob: null,
-      availableWorkers: [],
-      isWorkerRegistrationVisible: false,
-      baseUrl: import.meta.env.VITE_BASE_URL,
-    };
-  },
   setup() {
     const router = useRouter();
     const toast = useToast();
+    const store = useStore();
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+
+    const selectedJob = ref(null);
+    const isWorkerRegistrationVisible = ref(false);
 
     const goToExecutionList = () => {
       router.push({ name: 'ExecutionList' });
     };
 
-    return {
-      goToExecutionList,
-      toast,
+    const toggleWorkerRegistration = () => {
+      isWorkerRegistrationVisible.value = !isWorkerRegistrationVisible.value;
     };
-  },
-  methods: {
-    toggleWorkerRegistration() {
-      this.isWorkerRegistrationVisible = !this.isWorkerRegistrationVisible;
-    },
-    scheduleJob(job) {
-      this.selectedJob = job;
-    },
-    cancelSchedule() {
-      this.selectedJob = null;
-    },
-    updateAvailableWorkers(workers) {
-      this.availableWorkers = workers;
-    },
-    // In JobListingPage.vue
-    async executeJob(scheduleData) {
+
+    const scheduleJob = (job) => {
+      selectedJob.value = job;
+    };
+
+    const cancelSchedule = () => {
+      selectedJob.value = null;
+    };
+
+    const executeJob = async (scheduleData) => {
       let { scheduledDate } = scheduleData;
       if (!scheduledDate) {
         scheduledDate = new Date().toISOString();
@@ -90,21 +82,30 @@ export default {
       }
 
       const payload = {
-        job: this.selectedJob,
+        job: selectedJob.value,
         scheduledDate: scheduledDate,
       };
 
       try {
-        const response = await axios.post(`${this.baseUrl}/v1/execution`, payload);
+        const response = await axios.post(`${baseUrl}/v1/execution`, payload);
         console.log('Job executed successfully:', response.data);
-        this.toast.success('Job scheduled successfully');
-        this.selectedJob = null;
+        toast.success('Job scheduled successfully');
+        selectedJob.value = null;
       } catch (error) {
         console.error('Error executing job:', error);
-        this.toast.error('Failed to execute job. Please try again.');
+        toast.error('Failed to execute job. Please try again.');
       }
-    },
+    };
 
+    return {
+      selectedJob,
+      isWorkerRegistrationVisible,
+      goToExecutionList,
+      toggleWorkerRegistration,
+      scheduleJob,
+      cancelSchedule,
+      executeJob,
+    };
   },
 };
 </script>
