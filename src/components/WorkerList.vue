@@ -47,7 +47,7 @@
 <script>
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -68,7 +68,7 @@ export default {
 
     const connectWorker = (worker) => {
       store
-        .dispatch('connectWorker', worker) // Dispatch an action to handle worker connection
+        .dispatch('connectWorker', worker)
         .then(() => {
           toast.success(`Worker ${worker.workerName} connected successfully!`);
         })
@@ -80,7 +80,7 @@ export default {
     const removeWorker = (workerId) => {
       if (confirm('Are you sure you want to remove this worker?')) {
         store
-          .dispatch('removeWorker', workerId) // Dispatch an action to remove worker
+          .dispatch('removeWorker', workerId)
           .then(() => {
             toast.success('Worker removed successfully.');
           })
@@ -130,7 +130,6 @@ h2 {
   justify-content: space-between;
   align-items: center;
   width: 70%;
-  /* Adjust width to allow for worker actions */
 }
 
 .worker-actions {

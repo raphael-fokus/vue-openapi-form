@@ -1,13 +1,12 @@
 import { createStore } from 'vuex';
 import axios from 'axios';
-import { reactive } from 'vue';
 
 const store = createStore({
   state: () => ({
     adminWorkerId: '',
-    executions: reactive([]),
-    workers: reactive([]),
-    jobs: reactive([]),
+    executions: [],
+    workers: [],
+    jobs: [],
     workerLogs: {},
     socket: null,
   }),
@@ -157,54 +156,70 @@ const store = createStore({
         console.error('Admin worker ID not set.');
         return;
       }
-
+    
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
       const path = '/v1/connection';
       const wsUrl = `${protocol}${host}${path}?workerId=${state.adminWorkerId}`;
-
+    
       const socket = new WebSocket(wsUrl);
       commit('SET_SOCKET', socket);
-
+    
       // Capture `dispatch` and `commit` in variables to ensure they are accessible
       const storeDispatch = dispatch;
       const storeCommit = commit;
-
+    
       socket.onopen = () => {
-        //  console.log('WebSocket connected');
+        console.log('WebSocket connected');
         storeDispatch('fetchInitialData');
       };
-
+    
       socket.onmessage = (event) => {
-        //  console.log('Raw WebSocket message:', event.data);
         let data;
         try {
           data = JSON.parse(event.data);
-          //    console.log('Parsed WebSocket message:', data);
           storeDispatch('processWebSocketMessage', data);
         } catch (e) {
           console.error('Error parsing WebSocket message:', e);
         }
       };
-
-      socket.onclose = () => {
-        console.error('WebSocket closed');
+    
+      socket.onclose = (event) => {
+        console.warn('WebSocket closed', event.reason);
+        // Attempt to reconnect after a short delay
+        setTimeout(() => {
+          console.log('Reconnecting WebSocket...');
+          storeDispatch('connectWebSocket');
+        }, 3000); // Reconnect after 3 seconds
       };
-
+    
       socket.onerror = (error) => {
         console.error('WebSocket error:', error);
       };
     },
     processWebSocketMessage({ commit }, data) {
-      //  console.log('Processing WebSocket message:', data);
-      const payload = data.payload;
-      console.log('Extracted payload:', payload);
-
-      if (!payload || !payload.action) {
-        console.error('Invalid WebSocket message payload:', payload);
+      // Check if the message contains a payload field
+      if (!data.payload) {
+        // Handle messages without payload (e.g., connection messages or system messages)
+        if (data.message) {
+          console.log('WebSocket system message:', data.message);
+          return; // Return early, as there is no further action to take
+        }
+        
+        // If neither payload nor message exists, it's truly an invalid message
+        console.error('Invalid WebSocket message payload:', data);
         return;
       }
-
+    
+      // If there's a payload, continue as usual
+      const payload = data.payload;
+      console.log('Extracted payload:', payload);
+    
+      if (!payload.action) {
+        console.error('Missing action in WebSocket message:', payload);
+        return;
+      }
+    
       switch (payload.action) {
         case 'workerUpdate':
           payload.values.forEach((worker) => {

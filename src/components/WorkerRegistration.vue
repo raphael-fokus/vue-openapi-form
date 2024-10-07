@@ -1,4 +1,3 @@
-<!-- WorkerRegistration.vue -->
 <template>
   <div class="worker-registration-container">
     <h3>Register New Worker</h3>
@@ -62,6 +61,7 @@ export default {
         .post(`${this.baseUrl}/v1/registration`, this.newWorker)
         .then(() => {
           this.stateMessage = 'Worker registered successfully!';
+          this.$emit('worker-registered'); 
           this.newWorker.workerId = uuidv4(); // Generate a new UUID for the next worker registration
         })
         .catch(() => {
@@ -72,6 +72,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .worker-registration-container {

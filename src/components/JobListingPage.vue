@@ -1,14 +1,16 @@
 <template>
   <div class="job-listing-container">
     <h1>Jobs & Scheduling</h1>
-    <job-list @schedule-job="scheduleJob" />
+
+    <!-- Job List Component -->
+    <JobList @schedule-job="scheduleJob" />
 
     <!-- Scheduling Area -->
-    <scheduling-area v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
+    <SchedulingArea v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
       @execute-job="executeJob" />
 
-    <!-- WorkerList to show connected and registered workers -->
-    <worker-list />
+    <!-- Worker List to show connected and registered workers -->
+    <WorkerList />
 
     <!-- Icon buttons for worker registration and executions -->
     <div class="icon-buttons">
@@ -26,7 +28,8 @@
     </div>
 
     <!-- Worker Registration Component, conditionally visible -->
-    <WorkerRegistration v-if="isWorkerRegistrationVisible" @close="toggleWorkerRegistration" />
+    <WorkerRegistration v-if="isWorkerRegistrationVisible" @close="toggleWorkerRegistration"
+      @worker-registered="refreshWorkers" />
   </div>
 </template>
 
@@ -38,7 +41,7 @@ import WorkerRegistration from './WorkerRegistration.vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -66,7 +69,12 @@ export default {
     };
 
     const scheduleJob = (job) => {
-      selectedJob.value = job;
+      job.tasks.forEach((task) => {
+        if (!task.worker) {
+          task.worker = null; // Reset worker assignment for new scheduling
+        }
+      });
+      selectedJob.value = job; // Direct assignment for reactivity
     };
 
     const cancelSchedule = () => {
@@ -87,14 +95,17 @@ export default {
       };
 
       try {
-        const response = await axios.post(`${baseUrl}/v1/execution`, payload);
-        console.log('Job executed successfully:', response.data);
+        await axios.post(`${baseUrl}/v1/execution`, payload);
         toast.success('Job scheduled successfully');
         selectedJob.value = null;
       } catch (error) {
         console.error('Error executing job:', error);
         toast.error('Failed to execute job. Please try again.');
       }
+    };
+
+    const refreshWorkers = () => {
+      store.dispatch('fetchWorkers');
     };
 
     return {
@@ -105,6 +116,7 @@ export default {
       scheduleJob,
       cancelSchedule,
       executeJob,
+      refreshWorkers,
     };
   },
 };

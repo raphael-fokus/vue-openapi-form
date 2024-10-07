@@ -50,7 +50,7 @@ export default {
     const jobs = computed(() => store.getters.jobs);
 
     const scheduleJob = (job) => {
-      // Emit an event to the parent component to handle scheduling
+     // const jobCopy = JSON.parse(JSON.stringify(job)); // Deep copy the job
       emit('schedule-job', job);
     };
 
