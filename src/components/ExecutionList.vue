@@ -9,18 +9,21 @@
             {{ exe.job.jobName }} ({{ exe.job.jobId }} / {{ exe.executionId }})
           </p>
           <p>
-            <strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }} /
-            {{ exe.overallTasksSteps }}
+            <strong>State:</strong> {{ exe.state }} - <strong>Current Task:</strong> {{ exe.currentTaskNo }}
+          </p>
+          <p>
+            <strong>Overall Progress:</strong> {{ exe.overallCurrentTaskNo }} / {{ exe.overallTasksSteps }}
           </p>
 
-          <!-- Progress Bar for task execution -->
+          <!-- Progress Bar for overall task execution -->
           <div class="progress-bar">
-            <div class="progress" :style="{ width: getProgressPercentage(exe.currentTaskNo, exe.overallTasksSteps) }">
+            <div class="progress"
+              :style="{ width: getOverallProgressPercentage(exe.overallCurrentTaskNo, exe.overallTasksSteps) }">
             </div>
           </div>
 
           <p>
-            <strong>Workers:</strong>
+            <strong>Workers: </strong>
             <span v-for="(task, index) in exe.job.tasks" :key="task.worker.workerId">
               {{ task.worker.workerType }} - {{ task.worker.workerName }}
               <span v-if="index !== exe.job.tasks.length - 1">, </span>
@@ -30,7 +33,6 @@
         <div class="execution-actions">
           <button @click="removeExecution(exe.executionId)" class="button is-danger ml-10">Cancel/Remove</button>
         </div>
-
       </div>
     </div>
     <div v-else class="no-executions">
@@ -60,8 +62,8 @@ export default {
       return date.toLocaleString(); // Adjust format as needed
     };
 
-    const getProgressPercentage = (currentTaskNo, overallTasksSteps) => {
-      const percentage = (currentTaskNo / overallTasksSteps) * 100;
+    const getOverallProgressPercentage = (overallCurrentTaskNo, overallTasksSteps) => {
+      const percentage = (overallCurrentTaskNo / overallTasksSteps) * 100;
       return `${percentage}%`;
     };
 
@@ -78,7 +80,6 @@ export default {
           axios
             .delete(`${baseUrl}/v1/execution/${executionId}`)
             .then(() => {
-              // Remove execution from the store
               store.commit('REMOVE_EXECUTION', executionId);
               toast.success('Execution removed successfully');
             })
@@ -94,13 +95,12 @@ export default {
     return {
       executions,
       formatScheduledDate,
-      getProgressPercentage,
+      getOverallProgressPercentage,
       removeExecution,
     };
   },
 };
 </script>
-
 
 <style scoped>
 .executions-container {

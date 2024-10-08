@@ -40,7 +40,6 @@ import WorkerList from './WorkerList.vue';
 import WorkerRegistration from './WorkerRegistration.vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import axios from 'axios';
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 
@@ -55,7 +54,6 @@ export default {
     const router = useRouter();
     const toast = useToast();
     const store = useStore();
-    const baseUrl = import.meta.env.VITE_BASE_URL;
 
     const selectedJob = ref(null);
     const isWorkerRegistrationVisible = ref(false);
@@ -83,23 +81,14 @@ export default {
 
     const executeJob = async (scheduleData) => {
       let { scheduledDate } = scheduleData;
-      if (!scheduledDate) {
-        scheduledDate = new Date().toISOString();
-      } else if (scheduledDate instanceof Date) {
-        scheduledDate = scheduledDate.toISOString();
-      }
-
-      const payload = {
-        job: selectedJob.value,
-        scheduledDate: scheduledDate,
-      };
-
       try {
-        await axios.post(`${baseUrl}/v1/execution`, payload);
+        await store.dispatch('executeJob', {
+          job: selectedJob.value,
+          scheduledDate: scheduledDate || new Date().toISOString(),
+        });
         toast.success('Job scheduled successfully');
         selectedJob.value = null;
       } catch (error) {
-        console.error('Error executing job:', error);
         toast.error('Failed to execute job. Please try again.');
       }
     };

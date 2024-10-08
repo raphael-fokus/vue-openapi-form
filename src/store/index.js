@@ -14,7 +14,7 @@ const store = createStore({
     executions: (state) => state.executions,
     workers: (state) => state.workers,
     jobs: (state) => state.jobs,
-    getWorkerLogs: (state) => (workerId) => state.workerLogs[workerId] || [], // Get logs for a worker
+    getWorkerLogs: (state) => (workerId) => state.workerLogs[workerId] || [], 
   },
   mutations: {
     SET_ADMIN_WORKER_ID(state, workerId) {
@@ -64,7 +64,7 @@ const store = createStore({
       state.executions = executions;
     },
     UPDATE_EXECUTION(state, execution) {
-      const index = state.executions.findIndex((e) => e.executionId === execution.executionId);
+      const index = state.executions.findIndex(e => e.executionId === execution.executionId);
       if (index !== -1) {
         state.executions.splice(index, 1, execution);
       } else {
@@ -92,23 +92,36 @@ const store = createStore({
         const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
         const path = '/v1/connection';
         const wsUrl = `${protocol}${host}${path}?workerId=${worker.workerId}`;
-
+    
         const socket = new WebSocket(wsUrl);
-
+    
         socket.onopen = () => {
           commit('UPDATE_WORKER', { ...worker, connected: true });
+          console.log(`Worker ${worker.workerName} connected successfully!`);
         };
-
+    
         socket.onclose = () => {
           commit('UPDATE_WORKER', { ...worker, connected: false });
+          console.warn(`Worker ${worker.workerName} disconnected. Attempting to reconnect...`);
+          setTimeout(() => {
+            // Attempt reconnection after a delay
+            this.dispatch('connectWorker', worker);
+          }, 3000); // Retry after 3 seconds
         };
-
+    
         socket.onerror = (error) => {
           console.error('WebSocket error:', error);
-          throw new Error('Connection error');
+          commit('UPDATE_WORKER', { ...worker, connected: false });
+        };
+    
+        socket.onmessage = (event) => {
+          // Process incoming messages related to worker tasks
+          const data = JSON.parse(event.data);
+          console.log('Worker WebSocket message received:', data);
+          // Handle task execution logic here if necessary
         };
       } catch (error) {
-        throw error;
+        console.error('Error connecting worker:', error);
       }
     },
     async removeWorker({ commit }, workerId) {
@@ -118,6 +131,36 @@ const store = createStore({
       } catch (error) {
         console.error('Failed to remove worker:', error);
         throw error;
+      }
+    },
+    async executeJob({ commit }, { job, scheduledDate }) {
+      // Validate the job object before proceeding
+      if (!job || !job.tasks || job.tasks.length === 0) {
+        console.error('Invalid job: No tasks provided.');
+        throw new Error('Invalid job: No tasks provided.');
+      }
+    
+      // Check that each task has a valid stream URL
+     // for (const task of job.tasks) {
+     //   if (!task.stream || !task.stream.url) {
+     //     console.error(`Invalid stream data for task: ${task.action}`);
+        //  throw new Error(`Invalid stream data for task: ${task.action}`);
+      //  }
+     // }
+    
+      // Construct the payload for the API request
+      const payload = {
+        job,
+        scheduledDate: scheduledDate || new Date().toISOString(),
+      };
+    
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/v1/execution`, payload);
+        commit('UPDATE_EXECUTION', response.data);  
+        console.log('Job scheduled successfully');
+      } catch (error) {
+        console.error('Failed to execute job:', error);
+        throw error; 
       }
     },
     async registerAdminWorker({ commit, dispatch }) {
@@ -130,12 +173,11 @@ const store = createStore({
           dispatch('connectWebSocket');
         } catch (error) {
           console.error('Error verifying admin worker:', error);
-          // Remove invalid workerId and register again
           localStorage.removeItem('admin-workerId');
           workerId = null;
         }
       }
-
+    
       if (!workerId) {
         // Register new admin worker
         try {
@@ -198,20 +240,18 @@ const store = createStore({
       };
     },
     processWebSocketMessage({ commit }, data) {
-      // Check if the message contains a payload field
+      // Check if this is a system message
+      if (data.message) {
+        console.log('System message received:', data.message);
+        return; // Early return since it's not an application-level message
+      }
+    
+      // Check for payload to proceed with application-specific processing
       if (!data.payload) {
-        // Handle messages without payload (e.g., connection messages or system messages)
-        if (data.message) {
-          console.log('WebSocket system message:', data.message);
-          return; // Return early, as there is no further action to take
-        }
-        
-        // If neither payload nor message exists, it's truly an invalid message
-        console.error('Invalid WebSocket message payload:', data);
+        console.error('Invalid WebSocket message format:', data);
         return;
       }
     
-      // If there's a payload, continue as usual
       const payload = data.payload;
       console.log('Extracted payload:', payload);
     
@@ -236,7 +276,7 @@ const store = createStore({
             commit('UPDATE_EXECUTION', execution);
           });
           break;
-        case 'workerLog':  // Handle log messages
+        case 'workerLog':  
           payload.values.forEach((logEntry) => {
             commit('ADD_WORKER_LOG', { workerId: logEntry.workerId, log: logEntry.log });
           });
