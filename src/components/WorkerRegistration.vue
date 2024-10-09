@@ -16,39 +16,35 @@
       <label for="workerName"><strong>Worker Name:</strong></label>
       <input id="workerName" v-model="newWorker.workerName" placeholder="Worker Name" class="input is-primary" />
     </div>
-    <div class="form-field">
-      <label for="workerId"><strong>Worker ID:</strong></label>
-      <input id="workerId" v-model="newWorker.workerId" placeholder="Worker ID" class="input is-primary" readonly />
-    </div>
     <div class="registration-actions">
       <button @click="registerWorker" class="button is-primary">{{ registerButtonText }}</button>
     </div>
     <p class="state-message"><strong>State:</strong> {{ stateMessage }}</p>
+
+    <!-- Render the Worker component after registration -->
+    <Worker v-if="registeredWorker" :worker="registeredWorker" />
   </div>
 </template>
 
 <script>
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
-import { useToast } from 'vue-toastification';
+import Worker from './Worker.vue'; 
 
 export default {
+  components: {
+    Worker,
+  },
   data() {
     return {
       newWorker: {
-        workerId: uuidv4(),
         workerType: '',
         workerName: '',
       },
+      registeredWorker: null,
       registerButtonText: 'Register',
       stateMessage: 'Not registered',
       baseUrl: import.meta.env.VITE_BASE_URL,
-    };
-  },
-  setup() {
-    const toast = useToast();
-    return {
-      toast,
     };
   },
   methods: {
@@ -57,22 +53,26 @@ export default {
         this.stateMessage = 'Please fill in both worker type and name.';
         return;
       }
+
+      // Generate a new workerId for each registration
+      this.newWorker.workerId = uuidv4();
+
       axios
         .post(`${this.baseUrl}/v1/registration`, this.newWorker)
-        .then(() => {
+        .then((response) => {
+          const workerData = response.data;
           this.stateMessage = 'Worker registered successfully!';
-          this.$emit('worker-registered'); 
-          this.newWorker.workerId = uuidv4(); // Generate a new UUID for the next worker registration
+          this.registeredWorker = workerData; // Store the worker data
+          this.newWorker.workerId = ''; // Clear the workerId field for new registrations
         })
-        .catch(() => {
+        .catch((error) => {
           this.stateMessage = 'Failed to register worker.';
-          this.toast.error('Error registering worker.');
+          console.error('Error registering worker:', error);
         });
     },
   },
 };
 </script>
-
 
 <style scoped>
 .worker-registration-container {

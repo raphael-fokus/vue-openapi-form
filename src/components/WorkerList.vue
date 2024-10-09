@@ -20,7 +20,7 @@
             <p>
               <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
               <i>({{ element.workerId }})</i>
-              <span v-if="element.connected" class="icon-connected">✔️</span>
+              <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
               <span v-else class="icon-warning">⚠️</span>
             </p>
             <input type="text" v-model="element.refSettingId" placeholder="refSettingId"
@@ -63,8 +63,12 @@ export default {
     const sortedWorkers = computed(() => {
       return workers.value
         .filter((worker) => worker.workerType !== 'ADMIN')
-        .sort((a, b) => (a.connected === b.connected ? 0 : a.connected ? -1 : 1));
+        .sort((a, b) => {
+          if (a.isExecutingTask || a.connected) return -1;
+          return 1;
+        });
     });
+
 
     const connectWorker = (worker) => {
       store

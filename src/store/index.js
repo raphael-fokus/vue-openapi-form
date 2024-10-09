@@ -86,12 +86,19 @@ const store = createStore({
     },
   },
   actions: {
-    async connectWorker({ commit }, worker) {
+    async connectWorker({ commit, state }, worker) {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
         const path = '/v1/connection';
         const wsUrl = `${protocol}${host}${path}?workerId=${worker.workerId}`;
+        
+        // Check if the worker is already connected
+        const existingWorker = state.workers.find(w => w.workerId === worker.workerId && w.connected);
+        if (existingWorker) {
+          console.log(`Worker ${worker.workerName} is already connected.`);
+          return;
+        }
     
         const socket = new WebSocket(wsUrl);
     
@@ -104,7 +111,6 @@ const store = createStore({
           commit('UPDATE_WORKER', { ...worker, connected: false });
           console.warn(`Worker ${worker.workerName} disconnected. Attempting to reconnect...`);
           setTimeout(() => {
-            // Attempt reconnection after a delay
             this.dispatch('connectWorker', worker);
           }, 3000); // Retry after 3 seconds
         };
@@ -115,15 +121,18 @@ const store = createStore({
         };
     
         socket.onmessage = (event) => {
-          // Process incoming messages related to worker tasks
           const data = JSON.parse(event.data);
           console.log('Worker WebSocket message received:', data);
-          // Handle task execution logic here if necessary
         };
+    
+        // Update the socket reference in state if needed
+        commit('SET_SOCKET', socket);
+    
       } catch (error) {
         console.error('Error connecting worker:', error);
       }
-    },
+    }
+    ,
     async removeWorker({ commit }, workerId) {
       try {
         await axios.delete(`${import.meta.env.VITE_BASE_URL}/v1/registration/${workerId}`);
