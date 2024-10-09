@@ -21,19 +21,26 @@
       <template #item="{ element }">
         <div class="listEntry" :class="{ connected: element.connected }">
           <div class="worker-details">
-            <p>
-              <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
-              <i>({{ element.workerId }})</i>
-              <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
-              <span v-else class="icon-warning">⚠️</span>
-            </p>
-            <input
-              type="text"
-              v-model="element.refSettingId"
-              placeholder="refSettingId"
-              class="input is-primary ref-setting-input"
-            />
+            <div class="worker-info">
+              <p>
+                <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
+                <i>({{ element.workerId }})</i>
+                <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
+                <span v-else class="icon-warning">⚠️</span>
+              </p>
+            </div>
+
+            <div class="ref-setting-container">
+              <input
+                id="refSettingId"
+                type="text"
+                v-model="element.refSettingId"
+                placeholder="refSettingId"
+                class="input is-primary ref-setting-input"
+              />
+            </div>
           </div>
+
           <div class="worker-actions">
             <button v-if="!element.connected" @click="connectWorker(element)" class="button is-primary">
               Connect
@@ -99,7 +106,7 @@ export default {
 
         setTimeout(() => {
           removeConfirmations.value[workerId] = false;
-        }, 5000); // Reset after 5 seconds
+        }, 5000);
       } else {
         store
           .dispatch('removeWorker', workerId)
@@ -113,12 +120,10 @@ export default {
       }
     };
 
-    // Define the cloneWorker function
     const cloneWorker = (original) => {
       return { ...original };
     };
 
-    // Draggable options including the clone function
     const draggableOptions = {
       group: { name: 'workers', pull: 'clone', put: false },
       sort: false,
@@ -165,8 +170,25 @@ h2 {
 
 .worker-details {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   width: 70%;
+  justify-content: space-between;
+}
+
+
+.worker-info {
+  width: 60%;
+}
+
+.ref-setting-container {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ref-setting-input {
+  width: 100%;
+  margin-top: 5px;
 }
 
 .worker-actions {
@@ -183,11 +205,6 @@ h2 {
 
 .ml-10 {
   margin-left: 10px;
-}
-
-.ref-setting-input {
-  width: 275px;
-  margin-top: 10px;
 }
 
 .no-workers {
