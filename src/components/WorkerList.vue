@@ -11,9 +11,13 @@
     </div>
 
     <!-- Draggable List of Workers -->
-    <draggable v-if="sortedWorkers.length" :list="sortedWorkers"
-      :options="{ group: { name: 'workers', pull: 'clone', put: false }, sort: false }" item-key="workerId"
-      class="draggable-worker-list">
+    <draggable
+      v-if="sortedWorkers.length"
+      :list="sortedWorkers"
+      :options="draggableOptions"
+      item-key="workerId"
+      class="draggable-worker-list"
+    >
       <template #item="{ element }">
         <div class="listEntry" :class="{ connected: element.connected }">
           <div class="worker-details">
@@ -23,15 +27,22 @@
               <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
               <span v-else class="icon-warning">⚠️</span>
             </p>
-            <input type="text" v-model="element.refSettingId" placeholder="refSettingId"
-              class="input is-primary ref-setting-input" />
+            <input
+              type="text"
+              v-model="element.refSettingId"
+              placeholder="refSettingId"
+              class="input is-primary ref-setting-input"
+            />
           </div>
           <div class="worker-actions">
             <button v-if="!element.connected" @click="connectWorker(element)" class="button is-primary">
               Connect
             </button>
-            <button @click="removeWorker(element.workerId)" class="button is-danger ml-10">
-              Remove
+            <button
+              @click="removeWorker(element.workerId)"
+              :class="['button', 'ml-10', removeConfirmations[element.workerId] ? 'is-warning' : 'is-danger']"
+            >
+              Remove<span v-if="removeConfirmations[element.workerId]">?</span>
             </button>
           </div>
         </div>
@@ -47,7 +58,7 @@
 <script>
 import draggable from 'vuedraggable';
 import { useToast } from 'vue-toastification';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -69,6 +80,7 @@ export default {
         });
     });
 
+    const removeConfirmations = ref({});
 
     const connectWorker = (worker) => {
       store
@@ -82,11 +94,18 @@ export default {
     };
 
     const removeWorker = (workerId) => {
-      if (confirm('Are you sure you want to remove this worker?')) {
+      if (!removeConfirmations.value[workerId]) {
+        removeConfirmations.value[workerId] = true;
+
+        setTimeout(() => {
+          removeConfirmations.value[workerId] = false;
+        }, 5000); // Reset after 5 seconds
+      } else {
         store
           .dispatch('removeWorker', workerId)
           .then(() => {
             toast.success('Worker removed successfully.');
+            delete removeConfirmations.value[workerId];
           })
           .catch(() => {
             toast.error('Failed to remove worker.');
@@ -94,10 +113,25 @@ export default {
       }
     };
 
+    // Define the cloneWorker function
+    const cloneWorker = (original) => {
+      return { ...original };
+    };
+
+    // Draggable options including the clone function
+    const draggableOptions = {
+      group: { name: 'workers', pull: 'clone', put: false },
+      sort: false,
+      clone: cloneWorker,
+    };
+
     return {
       sortedWorkers,
       connectWorker,
       removeWorker,
+      removeConfirmations,
+      cloneWorker,
+      draggableOptions,
     };
   },
 };
@@ -131,8 +165,7 @@ h2 {
 
 .worker-details {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   width: 70%;
 }
 
@@ -169,5 +202,17 @@ h2 {
 
 .icon-connected {
   color: #23d160;
+}
+
+.is-warning {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
 }
 </style>
