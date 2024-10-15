@@ -5,7 +5,8 @@
     <!-- Legend for worker status -->
     <div class="worker-legend">
       <p>
-        <strong>Legend:</strong> Registered <span class="icon-warning">⚠️</span>, Registered and Connected
+        <strong>Legend:</strong> Registered
+        <span class="icon-warning">⚠️</span>, Registered and Connected
         <span class="icon-connected">✔️</span>
       </p>
     </div>
@@ -25,7 +26,11 @@
               <p>
                 <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
                 <i>({{ element.workerId }})</i>
-                <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
+                <span
+                  v-if="element.connected || element.isExecutingTask"
+                  class="icon-connected"
+                  >✔️</span
+                >
                 <span v-else class="icon-warning">⚠️</span>
               </p>
             </div>
@@ -42,14 +47,26 @@
           </div>
 
           <div class="worker-actions">
-            <button v-if="!element.connected" @click="connectWorker(element)" class="button is-primary">
+            <!-- Connect Button -->
+            <button
+              v-if="!element.connected"
+              @click="connectWorker(element)"
+              class="button is-primary"
+            >
               Connect
             </button>
+
+            <!-- Disconnect or Remove Button -->
             <button
-              @click="removeWorker(element.workerId)"
-              :class="['button', 'ml-10', removeConfirmations[element.workerId] ? 'is-warning' : 'is-danger']"
+              @click="handleWorkerAction(element)"
+              :class="[
+                'button',
+                'ml-10',
+                removeConfirmations[element.workerId] && !element.connected ? 'is-warning' : 'is-danger',
+              ]"
             >
-              Remove<span v-if="removeConfirmations[element.workerId]">?</span>
+              {{ element.connected ? 'Disconnect' : 'Remove' }}
+              <span v-if="!element.connected && removeConfirmations[element.workerId]">?</span>
             </button>
           </div>
         </div>
@@ -100,6 +117,17 @@ export default {
         });
     };
 
+    const disconnectWorker = (worker) => {
+      store
+        .dispatch('disconnectWorker', worker)
+        .then(() => {
+          toast.info(`Worker ${worker.workerName} disconnected successfully.`);
+        })
+        .catch(() => {
+          toast.error('Failed to disconnect worker.');
+        });
+    };
+
     const removeWorker = (workerId) => {
       if (!removeConfirmations.value[workerId]) {
         removeConfirmations.value[workerId] = true;
@@ -120,6 +148,14 @@ export default {
       }
     };
 
+    const handleWorkerAction = (worker) => {
+      if (worker.connected) {
+        disconnectWorker(worker);
+      } else {
+        removeWorker(worker.workerId);
+      }
+    };
+
     const cloneWorker = (original) => {
       return { ...original };
     };
@@ -133,7 +169,9 @@ export default {
     return {
       sortedWorkers,
       connectWorker,
+      disconnectWorker,
       removeWorker,
+      handleWorkerAction,
       removeConfirmations,
       cloneWorker,
       draggableOptions,
@@ -174,7 +212,6 @@ h2 {
   width: 70%;
   justify-content: space-between;
 }
-
 
 .worker-info {
   width: 60%;
@@ -226,10 +263,20 @@ h2 {
 }
 
 @keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-4px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 </style>

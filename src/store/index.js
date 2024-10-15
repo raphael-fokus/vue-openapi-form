@@ -1,3 +1,4 @@
+// src/store/index.js
 import { createStore } from 'vuex';
 import axios from 'axios';
 
@@ -8,13 +9,14 @@ const store = createStore({
     workers: [],
     jobs: [],
     workerLogs: {},
-    socket: null,
+    socket: null, // Socket for the admin worker
+    workerSockets: {}, // Mapping of workerId to WebSocket instances
   }),
   getters: {
     executions: (state) => state.executions,
     workers: (state) => state.workers,
     jobs: (state) => state.jobs,
-    getWorkerLogs: (state) => (workerId) => state.workerLogs[workerId] || [], 
+    getWorkerLogs: (state) => (workerId) => state.workerLogs[workerId] || [],
   },
   mutations: {
     SET_ADMIN_WORKER_ID(state, workerId) {
@@ -64,7 +66,9 @@ const store = createStore({
       state.executions = executions;
     },
     UPDATE_EXECUTION(state, execution) {
-      const index = state.executions.findIndex(e => e.executionId === execution.executionId);
+      const index = state.executions.findIndex(
+        (e) => e.executionId === execution.executionId
+      );
       if (index !== -1) {
         state.executions.splice(index, 1, execution);
       } else {
@@ -84,55 +88,86 @@ const store = createStore({
       }
       state.workerLogs[workerId].push(log);
     },
+    // Worker Sockets
+    SET_WORKER_SOCKET(state, { workerId, socket }) {
+      state.workerSockets = {
+        ...state.workerSockets,
+        [workerId]: socket,
+      };
+    },
+    REMOVE_WORKER_SOCKET(state, workerId) {
+      const { [workerId]: _, ...rest } = state.workerSockets;
+      state.workerSockets = rest;
+    },
   },
   actions: {
-    async connectWorker({ commit, state }, worker) {
+    async connectWorker({ commit, state, dispatch }, worker) {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
         const path = '/v1/connection';
         const wsUrl = `${protocol}${host}${path}?workerId=${worker.workerId}`;
-        
+
         // Check if the worker is already connected
-        const existingWorker = state.workers.find(w => w.workerId === worker.workerId && w.connected);
+        const existingWorker = state.workers.find(
+          (w) => w.workerId === worker.workerId && w.connected
+        );
         if (existingWorker) {
           console.log(`Worker ${worker.workerName} is already connected.`);
           return;
         }
-    
+
         const socket = new WebSocket(wsUrl);
-    
+
         socket.onopen = () => {
           commit('UPDATE_WORKER', { ...worker, connected: true });
           console.log(`Worker ${worker.workerName} connected successfully!`);
         };
-    
+
         socket.onclose = () => {
           commit('UPDATE_WORKER', { ...worker, connected: false });
-          console.warn(`Worker ${worker.workerName} disconnected. Attempting to reconnect...`);
-          setTimeout(() => {
-            this.dispatch('connectWorker', worker);
-          }, 3000); // Retry after 3 seconds
+          console.warn(`Worker ${worker.workerName} disconnected.`);
+          if (!socket.isManuallyClosed) {
+            console.warn(`Attempting to reconnect worker ${worker.workerName}...`);
+            setTimeout(() => {
+              dispatch('connectWorker', worker);
+            }, 3000); // Retry after 3 seconds
+          }
         };
-    
+
         socket.onerror = (error) => {
           console.error('WebSocket error:', error);
           commit('UPDATE_WORKER', { ...worker, connected: false });
         };
-    
+
         socket.onmessage = (event) => {
           const data = JSON.parse(event.data);
           console.log('Worker WebSocket message received:', data);
+          // Handle messages from the worker if needed
         };
-    
-        // Update the socket reference in state if needed
-        commit('SET_SOCKET', socket);
-    
+
+        // Store the socket in the workerSockets mapping
+        commit('SET_WORKER_SOCKET', { workerId: worker.workerId, socket });
       } catch (error) {
         console.error('Error connecting worker:', error);
       }
-    }
-    ,
+    },
+
+    async disconnectWorker({ commit, state }, worker) {
+      const workerId = worker.workerId;
+      const socket = state.workerSockets[workerId];
+      if (socket) {
+        socket.isManuallyClosed = true; // Prevent reconnection
+        socket.close();
+        commit('REMOVE_WORKER_SOCKET', workerId);
+        console.log(`Worker ${worker.workerName} disconnected manually.`);
+      } else {
+        console.warn(`No active socket found for worker ${worker.workerName}.`);
+      }
+      // Update the worker's connected status
+      commit('UPDATE_WORKER', { ...worker, connected: false });
+    },
+
     async removeWorker({ commit }, workerId) {
       try {
         await axios.delete(`${import.meta.env.VITE_BASE_URL}/v1/registration/${workerId}`);
@@ -142,36 +177,30 @@ const store = createStore({
         throw error;
       }
     },
+
     async executeJob({ commit }, { job, scheduledDate }) {
       // Validate the job object before proceeding
       if (!job || !job.tasks || job.tasks.length === 0) {
         console.error('Invalid job: No tasks provided.');
         throw new Error('Invalid job: No tasks provided.');
       }
-    
-      // Check that each task has a valid stream URL
-     // for (const task of job.tasks) {
-     //   if (!task.stream || !task.stream.url) {
-     //     console.error(`Invalid stream data for task: ${task.action}`);
-        //  throw new Error(`Invalid stream data for task: ${task.action}`);
-      //  }
-     // }
-    
+
       // Construct the payload for the API request
       const payload = {
         job,
         scheduledDate: scheduledDate || new Date().toISOString(),
       };
-    
+
       try {
         const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/v1/execution`, payload);
-        commit('UPDATE_EXECUTION', response.data);  
+        commit('UPDATE_EXECUTION', response.data);
         console.log('Job scheduled successfully');
       } catch (error) {
         console.error('Failed to execute job:', error);
-        throw error; 
+        throw error;
       }
     },
+
     async registerAdminWorker({ commit, dispatch }) {
       let workerId = localStorage.getItem('admin-workerId');
       if (workerId) {
@@ -186,7 +215,7 @@ const store = createStore({
           workerId = null;
         }
       }
-    
+
       if (!workerId) {
         // Register new admin worker
         try {
@@ -202,29 +231,30 @@ const store = createStore({
         }
       }
     },
+
     connectWebSocket({ state, commit, dispatch }) {
       if (!state.adminWorkerId) {
         console.error('Admin worker ID not set.');
         return;
       }
-    
+
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
       const path = '/v1/connection';
       const wsUrl = `${protocol}${host}${path}?workerId=${state.adminWorkerId}`;
-    
+
       const socket = new WebSocket(wsUrl);
       commit('SET_SOCKET', socket);
-    
+
       // Capture `dispatch` and `commit` in variables to ensure they are accessible
       const storeDispatch = dispatch;
       const storeCommit = commit;
-    
+
       socket.onopen = () => {
         console.log('WebSocket connected');
         storeDispatch('fetchInitialData');
       };
-    
+
       socket.onmessage = (event) => {
         let data;
         try {
@@ -234,7 +264,7 @@ const store = createStore({
           console.error('Error parsing WebSocket message:', e);
         }
       };
-    
+
       socket.onclose = (event) => {
         console.warn('WebSocket closed', event.reason);
         // Attempt to reconnect after a short delay
@@ -243,32 +273,33 @@ const store = createStore({
           storeDispatch('connectWebSocket');
         }, 3000); // Reconnect after 3 seconds
       };
-    
+
       socket.onerror = (error) => {
         console.error('WebSocket error:', error);
       };
     },
+
     processWebSocketMessage({ commit }, data) {
       // Check if this is a system message
       if (data.message) {
         console.log('System message received:', data.message);
         return; // Early return since it's not an application-level message
       }
-    
+
       // Check for payload to proceed with application-specific processing
       if (!data.payload) {
         console.error('Invalid WebSocket message format:', data);
         return;
       }
-    
+
       const payload = data.payload;
       console.log('Extracted payload:', payload);
-    
+
       if (!payload.action) {
         console.error('Missing action in WebSocket message:', payload);
         return;
       }
-    
+
       switch (payload.action) {
         case 'workerUpdate':
           payload.values.forEach((worker) => {
@@ -285,7 +316,7 @@ const store = createStore({
             commit('UPDATE_EXECUTION', execution);
           });
           break;
-        case 'workerLog':  
+        case 'workerLog':
           payload.values.forEach((logEntry) => {
             commit('ADD_WORKER_LOG', { workerId: logEntry.workerId, log: logEntry.log });
           });
@@ -294,12 +325,14 @@ const store = createStore({
           console.warn('Unknown action:', payload.action);
       }
     },
+
     async fetchInitialData({ dispatch }) {
       // Fetch workers, jobs, and executions
       await dispatch('fetchWorkers');
       await dispatch('fetchJobs');
       await dispatch('fetchExecutions');
     },
+
     async fetchWorkers({ commit }) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/v1/registration`);
@@ -308,6 +341,7 @@ const store = createStore({
         console.error('Error fetching workers:', error);
       }
     },
+
     async fetchJobs({ commit }) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/v1/measurement`);
@@ -316,6 +350,7 @@ const store = createStore({
         console.error('Error fetching jobs:', error);
       }
     },
+
     async fetchExecutions({ commit }) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/v1/execution`);
