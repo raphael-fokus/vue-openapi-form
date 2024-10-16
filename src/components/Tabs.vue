@@ -1,31 +1,45 @@
 <template>
-  <div class="tabs ac-tabs is-line" :style=" showTab ? 'opacity: 1; visibility: visible;': ''">
+  <div class="tabs is-line">
     <ul>
-      <li :class="{ 'is-active': activeTab === 'form' }">
-        <a @click.prevent="showForm()">
-          <span class="icon is-small"
-            ><i
-              class="fa fa-file-text fa-flip-horizontal"
-              aria-hidden="true"
-            ></i
-          ></span>
-          <span>Form</span>
-        </a>
+      <li :class="{ 'is-active': $route.name === 'Home' }">
+        <router-link to="/">
+          <span class="icon is-small">
+            <i class="fa fa-home" aria-hidden="true"></i>
+          </span>
+          <span>Home</span>
+        </router-link>
       </li>
-      <li :class="{ 'is-active': activeTab === 'yaml' }">
-        <a @click.prevent="showYaml()">
-          <span class="icon is-small"
-            ><i class="fa fa-code" aria-hidden="true"></i
-          ></span>
-          <span>YAML</span>
-        </a>
+      <li :class="{ 'is-active': $route.name === 'JobListing' }">
+        <router-link to="/jobs">
+          <span class="icon is-small">
+            <i class="fa fa-list" aria-hidden="true"></i>
+          </span>
+          <span>Jobs</span>
+        </router-link>
       </li>
-      <li :class="{ 'is-active': activeTab === 'json' }">
-        <a @click.prevent="showJson()">
-          <span class="icon is-small"
-            ><i class="fa fa-code" aria-hidden="true"></i
-          ></span>
-          <span>JSON</span>
+      <li :class="{ 'is-active': $route.name === 'Workers' }">
+        <router-link to="/workers">
+          <span class="icon is-small">
+            <i class="fa fa-users" aria-hidden="true"></i>
+          </span>
+          <span>Workers</span>
+        </router-link>
+      </li>
+      <li :class="{ 'is-active': $route.name === 'ExecutionList' }">
+        <router-link to="/executions">
+          <span class="icon is-small">
+            <i class="fa fa-play" aria-hidden="true"></i>
+          </span>
+          <span>Executions</span>
+        </router-link>
+      </li>
+      <!-- Optional: GitHub Link -->
+      <li class="github-link">
+        <a href="https://github.com/raphael-fokus/vue-openapi-form" target="_blank">
+          <span class="icon is-small">
+            <i class="fa fa-github" aria-hidden="true"></i>
+          </span>
+          <span>GitHub</span>
         </a>
       </li>
     </ul>
@@ -33,41 +47,50 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue';
-
-export default defineComponent({
+export default {
   name: 'Tabs',
-  props: {
-    modelValue: {
-      type: String,
-      default: 'form',
-    },
-    showTab: {
-      type: Boolean,
-      default: false,
-    }
-  },
-  emits: ['update:modelValue'],
-
-  data() {
-    return {
-      activeTab: 'form',
-    };
-  },
-
-  methods: {
-    showForm() {
-      this.activeTab = 'form';
-      this.$emit('update:modelValue', 'form');
-    },
-    showJson() {
-      this.activeTab = 'json';
-      this.$emit('update:modelValue', 'json');
-    },
-    showYaml() {
-      this.activeTab = 'yaml';
-      this.$emit('update:modelValue', 'yaml');
-    },
-  },
-});
+};
 </script>
+
+<style scoped>
+.tabs {
+  background-color: #f5f5f5;
+  padding: 10px 20px;
+}
+
+.tabs ul {
+  display: flex;
+  align-items: center;
+}
+
+.tabs li {
+  margin-right: 20px;
+}
+
+.tabs li a {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  color: #333;
+  text-decoration: none;
+}
+
+.tabs li a:hover {
+  background-color: #ddd;
+  border-radius: 4px;
+}
+
+.tabs li.is-active a {
+  background-color: #176bb5;
+  color: white;
+  border-radius: 4px;
+}
+
+.icon {
+  margin-right: 5px;
+}
+
+.github-link {
+  margin-left: auto; 
+}
+</style>

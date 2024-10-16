@@ -26,6 +26,16 @@ const store = createStore({
       state.socket = socket;
     },
     // Workers
+    ADD_WORKER(state, worker) {
+      // Check if the worker already exists
+      const index = state.workers.findIndex((w) => w.workerId === worker.workerId);
+      if (index === -1) {
+        state.workers.push(worker);
+      } else {
+        // Update the existing worker
+        state.workers.splice(index, 1, worker);
+      }
+    },
     SET_WORKERS(state, workers) {
       state.workers = workers;
     },
@@ -104,7 +114,7 @@ const store = createStore({
     async connectWorker({ commit, state, dispatch }, worker) {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
+        const host = window.location.host.replace('3001', '3003'); // Adjust the port if needed
         const path = '/v1/connection';
         const wsUrl = `${protocol}${host}${path}?workerId=${worker.workerId}`;
 
@@ -231,6 +241,9 @@ const store = createStore({
         }
       }
     },
+    async addWorker({ commit }, worker) {
+      commit('ADD_WORKER', worker);
+    },
 
     connectWebSocket({ state, commit, dispatch }) {
       if (!state.adminWorkerId) {
@@ -239,7 +252,7 @@ const store = createStore({
       }
 
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-      const host = window.location.host.replace('3000', '3003'); // Adjust the port if needed
+      const host = window.location.host.replace('3001', '3003'); // Adjust the port if needed
       const path = '/v1/connection';
       const wsUrl = `${protocol}${host}${path}?workerId=${state.adminWorkerId}`;
 

@@ -18,16 +18,9 @@
     </div>
     <div class="registration-actions">
       <button @click="registerWorker" class="button is-primary">{{ registerButtonText }}</button>
+      <button @click="$emit('close')" class="button is-danger ml-10">Cancel</button>
     </div>
     <p class="state-message"><strong>State:</strong> {{ stateMessage }}</p>
-
-    <!-- list of registered workers -->
-    <div v-if="registeredWorkers.length > 0" class="registered-workers">
-      <h3>Registered Workers</h3>
-      <div v-for="(worker, index) in registeredWorkers" :key="worker.workerId" class="worker-item" :class="{'worker-item--alt': index % 2 !== 0}">
-        <Worker :worker="worker" />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -35,53 +28,67 @@
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import Worker from './Worker.vue'; 
+import { useStore } from 'vuex';
+import { ref, reactive } from 'vue';
 
 export default {
+  name: 'WorkerRegistration',
   components: {
     Worker,
   },
-  data() {
-    return {
-      newWorker: {
-        workerType: '',
-        workerName: '',
-      },
-      registeredWorkers: [], 
-      registerButtonText: 'Register',
-      stateMessage: 'Not registered',
-      baseUrl: import.meta.env.VITE_BASE_URL,
-    };
-  },
-  methods: {
-    registerWorker() {
-      if (!this.newWorker.workerType || !this.newWorker.workerName) {
-        this.stateMessage = 'Please fill in both worker type and name.';
+  setup(props, { emit }) {
+    const store = useStore();
+
+    const newWorker = reactive({
+      workerType: '',
+      workerName: '',
+    });
+
+    const registerButtonText = 'Register';
+    const stateMessage = ref('Not registered');
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+
+    const registerWorker = () => {
+      if (!newWorker.workerType || !newWorker.workerName) {
+        stateMessage.value = 'Please fill in both worker type and name.';
         return;
       }
 
-      // new workerId for each registration
+      // Generate a new workerId for each registration
       const workerToRegister = {
-        ...this.newWorker,
+        ...newWorker,
         workerId: uuidv4(),
       };
 
       axios
-        .post(`${this.baseUrl}/v1/registration`, workerToRegister)
+        .post(`${baseUrl}/v1/registration`, workerToRegister)
         .then((response) => {
           const workerData = response.data;
-          this.stateMessage = `Worker "${workerData.workerName}" registered successfully!`;
-          this.registeredWorkers.push(workerData);
-          // Reset the form
-          this.newWorker = {
-            workerType: '',
-            workerName: '',
-          };
+          stateMessage.value = `Worker "${workerData.workerName}" registered successfully!`;
+
+          // Dispatch an action to add the worker to the Vuex store
+          store.dispatch('addWorker', workerData).then(() => {
+            // Do NOT automatically connect the worker here
+            // Connections should be managed via WorkerList.vue
+            emit('worker-registered', workerData);
+          });
+
+          // Reset the form fields
+          newWorker.workerType = '';
+          newWorker.workerName = '';
         })
         .catch((error) => {
-          this.stateMessage = 'Failed to register worker.';
+          stateMessage.value = 'Failed to register worker.';
           console.error('Error registering worker:', error);
         });
-    },
+    };
+
+    return {
+      newWorker,
+      registerButtonText,
+      stateMessage,
+      registerWorker,
+    };
   },
 };
 </script>
@@ -111,42 +118,16 @@ export default {
   margin-top: 10px;
 }
 
+.registration-actions .button {
+  margin-right: 10px;
+}
+
 .state-message {
   margin-top: 10px;
   font-size: 14px;
 }
 
-.registered-workers {
-  margin-top: 30px;
-}
-
-.registered-workers h3 {
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.worker-item {
-  padding: 15px;
-  background-color: #f9f9f9; /* Default background color */
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  transition: background-color 0.3s;
-}
-
-.worker-item--alt {
-  background-color: #f1f1f1; /* Alternate background color */
-}
-
-.worker-item:hover {
-  background-color: #e9e9e9;
-}
-
-.worker-item h3 {
-  margin: 0;
-}
-
-.worker-item p {
-  margin: 5px 0 0;
+.ml-10 {
+  margin-left: 10px;
 }
 </style>

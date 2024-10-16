@@ -26,11 +26,7 @@
               <p>
                 <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
                 <i>({{ element.workerId }})</i>
-                <span
-                  v-if="element.connected || element.isExecutingTask"
-                  class="icon-connected"
-                  >✔️</span
-                >
+                <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
                 <span v-else class="icon-warning">⚠️</span>
               </p>
             </div>
@@ -148,6 +144,7 @@ export default {
       }
     };
 
+    // Handle disconnect or remove based on worker status
     const handleWorkerAction = (worker) => {
       if (worker.connected) {
         disconnectWorker(worker);

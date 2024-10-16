@@ -1,18 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import VueOpenapiForm from '@/components/VueOpenapiForm.vue';
-import JobListingPage from '@/components/JobListingPage.vue'; 
-import ExecutionListPage from '@/components/ExecutionListPage.vue'; 
+import Home from '@/pages/Home.vue'; 
+import JobListingPage from '@/pages/Jobs.vue'; 
+import ExecutionListPage from '@/pages/Executions.vue'; 
+import WorkersPage from '@/pages/Workers.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: VueOpenapiForm, 
+    component: Home, 
   },
   {
     path: '/jobs',
     name: 'JobListing',
     component: JobListingPage, 
+  },
+  {
+    path: '/workers',
+    name: 'Workers',
+    component: WorkersPage, 
   },
   {
     path: '/executions',

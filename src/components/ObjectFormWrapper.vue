@@ -22,7 +22,7 @@
         <!-- show errors-->
         <component-errors :errors="calcFormErrors(errors, fieldName)" />
       </h6>
-      <tabs v-if="!onlyJson" v-model="activeTab" :showTab="showRootTab"/>
+     <!-- <tabs v-if="!onlyJson" v-model="activeTab" :showTab="showRootTab"/> -->
     </div>
     <!-- form for all the object's properties -->
     <object-form
@@ -63,7 +63,11 @@ import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: 'ObjectFormWrapper',
-
+  data() {
+    return {
+      activeTab: 'form'
+    };
+  },
   mixins: [model, fold, tabs, validation],
   props: {
     schema: {
