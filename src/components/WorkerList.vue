@@ -115,12 +115,11 @@ export default {
 
         setTimeout(() => {
           removeConfirmations.value[workerId] = false;
-        }, 5000); // Confirmation timeout
+        }, 5000);
       } else {
         store
           .dispatch('removeWorker', workerId)
           .then(() => {
-            // Remove the worker reference
             delete workerRefs.value[workerId];
             delete removeConfirmations.value[workerId];
           })

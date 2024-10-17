@@ -84,7 +84,6 @@ export default {
               this.currentTask = taskValues;
               this.log('Executing task with ' + JSON.stringify(taskValues));
 
-              // Execute the task logic
               this.handleTaskExecution(taskValues);
               break;
 
@@ -114,7 +113,7 @@ export default {
               break;
 
             case 'syncTime':
-              // Implement syncTime logic if required
+              // to be implemented if required
               break;
 
             default:
@@ -150,7 +149,6 @@ export default {
         );
       }
 
-      // Simulate task execution with a timeout
       this.currentExecutionHandler = setTimeout(() => {
         this.completeTask();
       }, 10000);
@@ -187,6 +185,6 @@ export default {
 
 <style scoped>
 .worker-component {
-  display: none; /* Hidden component as UI is handled in WorkerList.vue */
+  display: none;
 }
 </style>

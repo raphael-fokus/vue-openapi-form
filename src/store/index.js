@@ -1,4 +1,3 @@
-// src/store/index.js
 import { createStore } from 'vuex';
 import axios from 'axios';
 
@@ -9,7 +8,7 @@ const store = createStore({
     workers: [],
     jobs: [],
     workerLogs: {},
-    socket: null, // Socket for the admin worker
+    socket: null, // Socket for admin worker
     workerSockets: {}, // Mapping of workerId to WebSocket instances
   }),
   getters: {
@@ -147,7 +146,7 @@ const store = createStore({
             console.warn(`Attempting to reconnect worker ${worker.workerName}...`);
             setTimeout(() => {
               dispatch('connectWorker', worker);
-            }, 3000); // Retry after 3 seconds
+            }, 3000);
           }
         };
 
@@ -159,10 +158,8 @@ const store = createStore({
         socket.onmessage = (event) => {
           const data = JSON.parse(event.data);
           console.log('Worker WebSocket message received:', data);
-          // Handle messages from the worker if needed
         };
 
-        // Store the socket in the workerSockets mapping
         commit('SET_WORKER_SOCKET', { workerId: worker.workerId, socket });
       } catch (error) {
         console.error('Error connecting worker:', error);
@@ -180,7 +177,7 @@ const store = createStore({
       } else {
         console.warn(`No active socket found for worker ${worker.workerName}.`);
       }
-      // Update the worker's connected status
+
       commit('UPDATE_WORKER', { ...worker, connected: false });
     },
 
@@ -195,13 +192,12 @@ const store = createStore({
     },
 
     async executeJob({ commit }, { job, scheduledDate }) {
-      // Validate the job object before proceeding
+
       if (!job || !job.tasks || job.tasks.length === 0) {
         console.error('Invalid job: No tasks provided.');
         throw new Error('Invalid job: No tasks provided.');
       }
 
-      // Construct the payload for the API request
       const payload = {
         job,
         scheduledDate: scheduledDate || new Date().toISOString(),
@@ -220,7 +216,6 @@ const store = createStore({
     async registerAdminWorker({ commit, dispatch }) {
       let workerId = localStorage.getItem('admin-workerId');
       if (workerId) {
-        // Verify if worker is registered
         try {
           await axios.get(`${import.meta.env.VITE_BASE_URL}/v1/registration/${workerId}`);
           commit('SET_ADMIN_WORKER_ID', workerId);
@@ -233,7 +228,6 @@ const store = createStore({
       }
 
       if (!workerId) {
-        // Register new admin worker
         try {
           const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/v1/registration`, {
             workerType: 'ADMIN',
@@ -265,7 +259,6 @@ const store = createStore({
       const socket = new WebSocket(wsUrl);
       commit('SET_SOCKET', socket);
 
-      // Capture `dispatch` and `commit` in variables to ensure they are accessible
       const storeDispatch = dispatch;
       const storeCommit = commit;
 
@@ -286,7 +279,6 @@ const store = createStore({
 
       socket.onclose = (event) => {
         console.warn('WebSocket closed', event.reason);
-        // Attempt to reconnect after a short delay
         setTimeout(() => {
           console.log('Reconnecting WebSocket...');
           storeDispatch('connectWebSocket');
@@ -299,13 +291,11 @@ const store = createStore({
     },
 
     processWebSocketMessage({ commit }, data) {
-      // Check if this is a system message
       if (data.message) {
         console.log('System message received:', data.message);
-        return; // Early return since it's not an application-level message
+        return;
       }
 
-      // Check for payload to proceed with application-specific processing
       if (!data.payload) {
         console.error('Invalid WebSocket message format:', data);
         return;
@@ -346,7 +336,6 @@ const store = createStore({
     },
 
     async fetchInitialData({ dispatch }) {
-      // Fetch workers, jobs, and executions
       await dispatch('fetchWorkers');
       await dispatch('fetchJobs');
       await dispatch('fetchExecutions');

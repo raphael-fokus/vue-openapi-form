@@ -1,6 +1,7 @@
+<!-- Executions.vue (Tab 4) -->
 <template>
     <div class="executions-container">
-      <h1>Current & Past Executions</h1>
+      <h1>Executions</h1>
   
       <!-- Execution List Component -->
       <ExecutionList />

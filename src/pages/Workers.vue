@@ -1,3 +1,4 @@
+<!-- Workers.vue (Tab 3) -->
 <template>
   <div class="workers-container">
     <h1>Worker Management</h1>
@@ -6,11 +7,8 @@
     <WorkerList />
 
     <!-- Worker Registration Component -->
-    <WorkerRegistration
-      v-if="isWorkerRegistrationVisible"
-      @close="toggleWorkerRegistration"
-      @worker-registered="refreshWorkers"
-    />
+    <WorkerRegistration v-if="isWorkerRegistrationVisible" @close="toggleWorkerRegistration"
+      @worker-registered="refreshWorkers" />
 
     <!-- Icon Buttons for navigation -->
     <div class="icon-buttons">
@@ -109,27 +107,24 @@ export default {
 }
 
 .icon-buttons {
-  position: relative; /* Added for absolute positioning of the centered button */
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
 }
 
-/* Center the Worker Registration button */
-.icon-buttons > .icon-button:nth-child(2) {
+.icon-buttons>.icon-button:nth-child(2) {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
 }
 
-/* Navigation buttons container on the right */
 .nav-buttons {
   display: flex;
   gap: 10px;
 }
 
-/* Individual button styles */
 .icon-button {
   position: relative;
   background-color: #176bb5;

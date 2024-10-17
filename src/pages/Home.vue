@@ -1,45 +1,26 @@
+<!-- Home.vue (Tab 1) -->
 <template>
   <div class="home-container">
     <h1>Job Template Generator</h1>
     <div class="home-content">
       <div class="left-content">
         <!-- Formular zur Generierung von Job-Templates -->
-        <vue-openapi-form
-          ref="vof"
-          :key="JSON.stringify(selectedJsonSchema)"
-          v-model="model"
-          class="ml-10"
-          :schema="jsonSchema"
-          :reference-model="referenceModel || ''"
-          :form-title="formTitle"
-        >
+        <vue-openapi-form ref="vof" :key="JSON.stringify(selectedJsonSchema)" v-model="model" class="ml-10"
+          :schema="jsonSchema" :reference-model="referenceModel || ''" :form-title="formTitle">
           <!-- Links Controls Slot -->
           <template #left-controls>
             <div class="form-controls-left">
-              <ac-button
-                title="Clear"
-                modifier-classes="is-outlined is-danger"
-                @click.prevent="clearFormInputs"
-              />
+              <ac-button title="Clear" modifier-classes="is-outlined is-danger" @click.prevent="clearFormInputs" />
             </div>
           </template>
 
           <!-- Rechts Controls Slot -->
           <template #right-controls="{ validate }">
             <div class="form-controls-right">
-              <ac-button
-                title="Done"
-                :is-loader-active="isLoading"
-                icon-class="check"
-                @click.prevent="submitFunc(validate)"
-              />
-              <ac-button
-                title="Submit"
-                class="ml-10"
-                :is-loader-active="isLoading"
-                icon-class="send"
-                @click.prevent="submitData(validate)"
-              />
+              <ac-button title="Done" :is-loader-active="isLoading" icon-class="check"
+                @click.prevent="submitFunc(validate)" />
+              <ac-button title="Submit" class="ml-10" :is-loader-active="isLoading" icon-class="send"
+                @click.prevent="submitData(validate)" />
             </div>
           </template>
         </vue-openapi-form>
@@ -49,11 +30,7 @@
         <!-- Header mit Toggle-Button -->
         <div class="schema-header is-flex is-justify-content-space-between is-align-items-center mb-3">
           <h2 class="title is-5">Schema & Model</h2>
-          <button
-            class="button is-small is-rounded"
-            @click="toggleSchemaCollapse"
-            aria-label="Toggle Schema & Model"
-          >
+          <button class="button is-small is-rounded" @click="toggleSchemaCollapse" aria-label="Toggle Schema & Model">
             <i :class="['fa', isSchemaCollapsed ? 'fa-plus' : 'fa-minus']"></i>
           </button>
         </div>
@@ -61,11 +38,8 @@
         <!-- Kollapsible Schema- und Model-Eingabe mit Transition -->
         <transition name="fade">
           <div v-show="!isSchemaCollapsed" class="schema-content">
-            <schema-model
-              :key="JSON.stringify(selectedJsonSchema)"
-              :schema-model="selectedJsonSchema"
-              @submit="updateSchema"
-            />
+            <schema-model :key="JSON.stringify(selectedJsonSchema)" :schema-model="selectedJsonSchema"
+              @submit="updateSchema" />
           </div>
         </transition>
 
@@ -108,7 +82,7 @@ export default {
       clearForm: true,
       baseUrl: import.meta.env.VUE_APP_API_URL || 'http://localhost:3003/api',
       initialModel: {},
-      isSchemaCollapsed: false, 
+      isSchemaCollapsed: false,
     };
   },
   setup() {
@@ -174,8 +148,8 @@ export default {
     },
     clearFormInputs() {
       this.model = JSON.parse(JSON.stringify(this.initialModel));
-      this.persistModel(this.model); 
-      this.$refs.vof.$forceUpdate();  
+      this.persistModel(this.model);
+      this.$refs.vof.$forceUpdate();
     },
     cancelFunc() {
       console.log('Form is canceled');
@@ -247,13 +221,13 @@ export default {
 
 
 .left-content {
-  flex: 2; 
+  flex: 2;
   display: flex;
   flex-direction: column;
 }
 
 .right-content {
-  flex: 1; 
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -359,14 +333,18 @@ export default {
   color: #23d160;
 }
 
-/* Fade Transition */
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
-.fade-enter-from, .fade-leave-to {
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
-.fade-enter-to, .fade-leave-from {
+
+.fade-enter-to,
+.fade-leave-from {
   opacity: 1;
 }
 </style>

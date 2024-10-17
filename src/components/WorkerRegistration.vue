@@ -54,7 +54,6 @@ export default {
         return;
       }
 
-      // Generate a new workerId for each registration
       const workerToRegister = {
         ...newWorker,
         workerId: uuidv4(),
@@ -66,14 +65,10 @@ export default {
           const workerData = response.data;
           stateMessage.value = `Worker "${workerData.workerName}" registered successfully!`;
 
-          // Dispatch an action to add the worker to the Vuex store
           store.dispatch('addWorker', workerData).then(() => {
-            // Do NOT automatically connect the worker here
-            // Connections should be managed via WorkerList.vue
             emit('worker-registered', workerData);
           });
 
-          // Reset the form fields
           newWorker.workerType = '';
           newWorker.workerName = '';
         })

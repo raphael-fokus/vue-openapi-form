@@ -1,4 +1,4 @@
-<!-- Jobs.vue (Tab 3) -->
+<!-- Jobs.vue (Tab 2) -->
 <template>
   <div class="job-listing-container">
     <h1>Jobs & Scheduling</h1>
@@ -7,12 +7,8 @@
     <JobList @schedule-job="scheduleJob" />
 
     <!-- Scheduling Area -->
-    <SchedulingArea
-      v-if="selectedJob"
-      :selected-job="selectedJob"
-      @cancel-schedule="cancelSchedule"
-      @execute-job="executeJob"
-    />
+    <SchedulingArea v-if="selectedJob" :selected-job="selectedJob" @cancel-schedule="cancelSchedule"
+      @execute-job="executeJob" />
 
     <!-- Icon Buttons for navigation -->
     <div class="icon-buttons">
@@ -122,21 +118,19 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Icon buttons container */
+
 .icon-buttons {
   display: flex;
-  justify-content: space-between; /* Space between left and right sections */
+  justify-content: space-between;
   align-items: center;
   margin-top: 20px;
 }
 
-/* Left-aligned navigation buttons */
 .nav-buttons {
   display: flex;
-  gap: 10px; /* Space between Home and Workers buttons */
+  gap: 10px;
 }
 
-/* Individual button styles */
 .icon-button {
   position: relative;
   background-color: #176bb5;
@@ -160,7 +154,7 @@ export default {
 
 .tooltip {
   position: absolute;
-  top: -35px; /* Position tooltip above the button */
+  top: -35px;
   left: 50%;
   transform: translateX(-50%);
   background-color: #333;
