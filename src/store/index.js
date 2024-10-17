@@ -47,6 +47,12 @@ const store = createStore({
         state.workers.push(worker);
       }
     },
+    UPDATE_WORKER_STATUS(state, { workerId, status }) {
+      const index = state.workers.findIndex((w) => w.workerId === workerId);
+      if (index !== -1) {
+        state.workers[index].connected = status === 'connected';
+      }
+    },
     REMOVE_WORKER(state, workerId) {
       const index = state.workers.findIndex((w) => w.workerId === workerId);
       if (index !== -1) {

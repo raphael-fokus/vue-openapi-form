@@ -68,6 +68,7 @@
             />
           </div>
         </transition>
+
       </div>
     </div>
   </div>
@@ -107,7 +108,7 @@ export default {
       clearForm: true,
       baseUrl: import.meta.env.VUE_APP_API_URL || 'http://localhost:3003/api',
       initialModel: {},
-      isSchemaCollapsed: false, // Neuer Zustand für das Ein-/Ausklappen
+      isSchemaCollapsed: false, 
     };
   },
   setup() {
@@ -119,26 +120,20 @@ export default {
     };
   },
   created() {
-    // Persistierte Schema und Modell aus dem lokalen Speicher abrufen
     const persistedSchema = this.getPersistedSchema();
     const persistedModel = this.getPersistedModel();
 
-    // Setze selectedJsonSchema
+
     this.selectedJsonSchema = persistedSchema || this.jsonSchemas[0];
 
-    // Setze jsonSchema basierend auf selectedJsonSchema
     this.jsonSchema = JSON.parse(JSON.stringify(this.selectedJsonSchema.schema));
 
-    // Setze model
     this.model = persistedModel || JSON.parse(JSON.stringify(this.selectedJsonSchema.model));
 
-    // Speichere eine tiefe Kopie des initialen Modells
     this.initialModel = JSON.parse(JSON.stringify(this.model));
 
-    // Setze formTitle basierend auf selectedJsonSchema
     this.formTitle = this.selectedJsonSchema.title;
 
-    // Initialisiere referenceModel
     this.referenceModel = JSON.parse(JSON.stringify(this.model));
   },
   watch: {
@@ -178,10 +173,9 @@ export default {
       this.clearFormInputs();
     },
     clearFormInputs() {
-      // Setze das Modell auf den initialen Zustand zurück
       this.model = JSON.parse(JSON.stringify(this.initialModel));
-      this.persistModel(this.model); // Aktualisiere den lokalen Speicher
-      this.$refs.vof.$forceUpdate();  // Erzwinge ein Update, um das Formular zu aktualisieren
+      this.persistModel(this.model); 
+      this.$refs.vof.$forceUpdate();  
     },
     cancelFunc() {
       console.log('Form is canceled');
@@ -204,7 +198,6 @@ export default {
           await axios.post(`${this.baseUrl}/v1/measurement`, this.model);
           this.toast.success('Job submitted successfully');
 
-          // Navigiere zur JobListing-Seite nach erfolgreichem Submit
           this.$router.push({ name: 'JobListing' });
 
           if (this.clearForm) {
@@ -218,7 +211,8 @@ export default {
       }
       this.isLoading = false;
     },
-    // Persistenz
+
+    //Persistence
     persistModel(model) {
       localStorage.setItem('formModel', JSON.stringify(model));
     },
@@ -242,8 +236,6 @@ export default {
 </script>
 
 <style scoped>
-/* Bestehende Styles beibehalten */
-
 .home-container {
   padding: 20px;
 }
@@ -253,21 +245,19 @@ export default {
   gap: 20px;
 }
 
-/* Neue Styles für die linken und rechten Inhalte */
+
 .left-content {
-  flex: 2; /* Formular bekommt mehr Platz */
+  flex: 2; 
   display: flex;
   flex-direction: column;
 }
 
 .right-content {
-  flex: 1; /* Schema bekommt weniger Platz */
+  flex: 1; 
   display: flex;
   flex-direction: column;
-  /* Optional: Padding oder andere Styles hinzufügen */
 }
 
-/* Weitere bestehende Styles */
 .form-controls-left,
 .form-controls-right {
   display: flex;
@@ -280,7 +270,6 @@ export default {
   align-items: center;
 }
 
-/* Custom styling für Form Controls */
 .form-controls {
   margin-top: 20px;
   display: flex;
@@ -308,7 +297,7 @@ export default {
   margin-right: 10px;
 }
 
-/* Zusätzliche Styles für Home-Seite */
+
 .left-content-wrapper {
   background-color: #f5f5f5;
   padding: 20px;

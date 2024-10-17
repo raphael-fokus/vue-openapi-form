@@ -4,7 +4,9 @@
     <Tabs />
 
     <!-- Haupt-Inhalt -->
-    <router-view />
+    <transition name="fade" mode="out-in">
+      <router-view></router-view>
+    </transition>
   </div>
 </template>
 
@@ -21,7 +23,6 @@ export default {
   setup() {
     const store = useStore();
 
-    // Registriere den Admin-Worker beim Mounten der App
     onMounted(() => {
       store.dispatch('registerAdminWorker');
     });
@@ -31,24 +32,16 @@ export default {
 };
 </script>
 
-<style>
-/* Globale Styles können hier definiert werden */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
+<style lang="scss">
+@import 'font-awesome/css/font-awesome.min.css';
+@import './assets/scss/main.scss';
 
-#app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
-
-.router-view {
-  flex: 1;
-  padding: 20px;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
-
-/* Optional: Weitere globale Styles */
 </style>

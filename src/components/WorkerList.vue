@@ -11,63 +11,51 @@
       </p>
     </div>
 
-    <!-- Draggable List of Workers -->
-    <draggable
-      v-if="sortedWorkers.length"
-      :list="sortedWorkers"
-      :options="draggableOptions"
-      item-key="workerId"
-      class="draggable-worker-list"
-    >
-      <template #item="{ element }">
-        <div class="listEntry" :class="{ connected: element.connected }">
+    <!-- List of Workers -->
+    <div v-if="sortedWorkers.length" class="worker-list">
+      <div v-for="worker in sortedWorkers" :key="worker.workerId" class="worker-item">
+        <!-- Worker Info and Actions -->
+        <div class="listEntry" :class="{ connected: worker.connected }">
           <div class="worker-details">
             <div class="worker-info">
               <p>
-                <strong>{{ element.workerType }}:</strong> {{ element.workerName }}
-                <i>({{ element.workerId }})</i>
-                <span v-if="element.connected || element.isExecutingTask" class="icon-connected">✔️</span>
+                <strong>{{ worker.workerType }}:</strong> {{ worker.workerName }}
+                <i>({{ worker.workerId }})</i>
+                <span v-if="worker.connected || worker.isExecutingTask" class="icon-connected">✔️</span>
                 <span v-else class="icon-warning">⚠️</span>
               </p>
             </div>
 
             <div class="ref-setting-container">
-              <input
-                id="refSettingId"
-                type="text"
-                v-model="element.refSettingId"
-                placeholder="refSettingId"
-                class="input is-primary ref-setting-input"
-              />
+              <input id="refSettingId" type="text" v-model="worker.refSettingId" placeholder="refSettingId"
+                class="input is-primary ref-setting-input" />
             </div>
           </div>
 
+          <!-- Worker Actions -->
           <div class="worker-actions">
             <!-- Connect Button -->
-            <button
-              v-if="!element.connected"
-              @click="connectWorker(element)"
-              class="button is-primary"
-            >
+            <button v-if="!worker.connected" @click="connectWorker(worker)" class="button is-primary">
               Connect
             </button>
 
             <!-- Disconnect or Remove Button -->
-            <button
-              @click="handleWorkerAction(element)"
-              :class="[
-                'button',
-                'ml-10',
-                removeConfirmations[element.workerId] && !element.connected ? 'is-warning' : 'is-danger',
-              ]"
-            >
-              {{ element.connected ? 'Disconnect' : 'Remove' }}
-              <span v-if="!element.connected && removeConfirmations[element.workerId]">?</span>
+            <button @click="handleWorkerAction(worker)" :class="[
+              'button',
+              'ml-10',
+              removeConfirmations[worker.workerId] && !worker.connected ? 'is-warning' : 'is-danger',
+            ]">
+              {{ worker.connected ? 'Disconnect' : 'Remove' }}
+              <span v-if="!worker.connected && removeConfirmations[worker.workerId]">?</span>
             </button>
           </div>
         </div>
-      </template>
-    </draggable>
+
+        <!-- Include the Worker component and listen for events -->
+        <Worker :worker="worker" @register-worker-ref="registerWorkerRef"
+          @update-connection-status="updateConnectionStatus" ref="workerComponents" />
+      </div>
+    </div>
 
     <div v-else class="no-workers">
       No workers available.
@@ -75,19 +63,18 @@
   </div>
 </template>
 
+
 <script>
-import draggable from 'vuedraggable';
-import { useToast } from 'vue-toastification';
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
+import Worker from './Worker.vue';
 
 export default {
   components: {
-    draggable,
+    Worker,
   },
   setup() {
     const store = useStore();
-    const toast = useToast();
 
     const workers = computed(() => store.getters.workers);
 
@@ -102,26 +89,24 @@ export default {
 
     const removeConfirmations = ref({});
 
+    const workerRefs = ref({});
+
+    const registerWorkerRef = (workerId, componentInstance) => {
+      workerRefs.value[workerId] = componentInstance;
+    };
+
     const connectWorker = (worker) => {
-      store
-        .dispatch('connectWorker', worker)
-        .then(() => {
-          toast.success(`Worker ${worker.workerName} connected successfully!`);
-        })
-        .catch(() => {
-          toast.error('Connection error.');
-        });
+      const workerComponent = workerRefs.value[worker.workerId];
+      if (workerComponent) {
+        workerComponent.connectToWorker();
+      }
     };
 
     const disconnectWorker = (worker) => {
-      store
-        .dispatch('disconnectWorker', worker)
-        .then(() => {
-          toast.info(`Worker ${worker.workerName} disconnected successfully.`);
-        })
-        .catch(() => {
-          toast.error('Failed to disconnect worker.');
-        });
+      const workerComponent = workerRefs.value[worker.workerId];
+      if (workerComponent) {
+        workerComponent.disconnectFromWorker();
+      }
     };
 
     const removeWorker = (workerId) => {
@@ -130,21 +115,21 @@ export default {
 
         setTimeout(() => {
           removeConfirmations.value[workerId] = false;
-        }, 5000);
+        }, 5000); // Confirmation timeout
       } else {
         store
           .dispatch('removeWorker', workerId)
           .then(() => {
-            toast.success('Worker removed successfully.');
+            // Remove the worker reference
+            delete workerRefs.value[workerId];
             delete removeConfirmations.value[workerId];
           })
-          .catch(() => {
-            toast.error('Failed to remove worker.');
+          .catch((error) => {
+            console.error('Failed to remove worker:', error);
           });
       }
     };
 
-    // Handle disconnect or remove based on worker status
     const handleWorkerAction = (worker) => {
       if (worker.connected) {
         disconnectWorker(worker);
@@ -153,14 +138,8 @@ export default {
       }
     };
 
-    const cloneWorker = (original) => {
-      return { ...original };
-    };
-
-    const draggableOptions = {
-      group: { name: 'workers', pull: 'clone', put: false },
-      sort: false,
-      clone: cloneWorker,
+    const updateConnectionStatus = (workerId, status) => {
+      store.commit('UPDATE_WORKER_STATUS', { workerId, status });
     };
 
     return {
@@ -170,12 +149,14 @@ export default {
       removeWorker,
       handleWorkerAction,
       removeConfirmations,
-      cloneWorker,
-      draggableOptions,
+      registerWorkerRef,
+      updateConnectionStatus,
     };
   },
 };
 </script>
+
+
 
 <style scoped>
 .workers-container {
@@ -263,15 +244,19 @@ h2 {
   0% {
     transform: translateX(0);
   }
+
   25% {
     transform: translateX(-4px);
   }
+
   50% {
     transform: translateX(4px);
   }
+
   75% {
     transform: translateX(-4px);
   }
+
   100% {
     transform: translateX(0);
   }

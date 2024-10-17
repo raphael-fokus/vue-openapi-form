@@ -12,7 +12,7 @@ const routes = [
   },
   {
     path: '/jobs',
-    name: 'JobListing',
+    name: 'Jobs',
     component: JobListingPage, 
   },
   {
@@ -22,7 +22,7 @@ const routes = [
   },
   {
     path: '/executions',
-    name: 'ExecutionList',
+    name: 'Executions',
     component: ExecutionListPage, 
   },
 ];

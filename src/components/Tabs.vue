@@ -9,14 +9,6 @@
           <span>Home</span>
         </router-link>
       </li>
-      <li :class="{ 'is-active': $route.name === 'JobListing' }">
-        <router-link to="/jobs">
-          <span class="icon is-small">
-            <i class="fa fa-list" aria-hidden="true"></i>
-          </span>
-          <span>Jobs</span>
-        </router-link>
-      </li>
       <li :class="{ 'is-active': $route.name === 'Workers' }">
         <router-link to="/workers">
           <span class="icon is-small">
@@ -25,6 +17,15 @@
           <span>Workers</span>
         </router-link>
       </li>
+      <li :class="{ 'is-active': $route.name === 'JobListing' }">
+        <router-link to="/jobs">
+          <span class="icon is-small">
+            <i class="fa fa-list" aria-hidden="true"></i>
+          </span>
+          <span>Jobs</span>
+        </router-link>
+      </li>
+
       <li :class="{ 'is-active': $route.name === 'ExecutionList' }">
         <router-link to="/executions">
           <span class="icon is-small">
@@ -91,6 +92,6 @@ export default {
 }
 
 .github-link {
-  margin-left: auto; 
+  margin-left: auto;
 }
 </style>

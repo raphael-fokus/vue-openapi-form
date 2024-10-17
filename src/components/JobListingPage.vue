@@ -12,8 +12,12 @@
     <!-- Worker List to show connected and registered workers -->
     <WorkerList />
 
-    <!-- Icon buttons for worker registration and executions -->
-    <div class="icon-buttons">
+    <!-- Worker Registration Component, conditionally visible -->
+    <WorkerRegistration v-if="isWorkerRegistrationVisible" @close="toggleWorkerRegistration"
+      @worker-registered="refreshWorkers" />
+
+     <!-- Icon buttons for worker registration and executions -->
+     <div class="icon-buttons">
       <!-- Worker Registration Toggle Button -->
       <button @click="toggleWorkerRegistration" class="icon-button">
         <i class="fa fa-user-plus"></i>
@@ -26,10 +30,6 @@
         <span class="tooltip">Current/Past Executions</span>
       </button>
     </div>
-
-    <!-- Worker Registration Component, conditionally visible -->
-    <WorkerRegistration v-if="isWorkerRegistrationVisible" @close="toggleWorkerRegistration"
-      @worker-registered="refreshWorkers" />
   </div>
 </template>
 
@@ -59,7 +59,7 @@ export default {
     const isWorkerRegistrationVisible = ref(false);
 
     const goToExecutionList = () => {
-      router.push({ name: 'ExecutionList' });
+      router.push({ name: 'Executions' });
     };
 
     const toggleWorkerRegistration = () => {
@@ -69,10 +69,10 @@ export default {
     const scheduleJob = (job) => {
       job.tasks.forEach((task) => {
         if (!task.worker) {
-          task.worker = null; // Reset worker assignment for new scheduling
+          task.worker = null; 
         }
       });
-      selectedJob.value = job; // Direct assignment for reactivity
+      selectedJob.value = job; 
     };
 
     const cancelSchedule = () => {
@@ -113,21 +113,28 @@ export default {
 
 <style scoped>
 .job-listing-container {
+  position: relative; 
   margin: 20px;
   padding: 20px;
+  padding-bottom: 80px; 
   background-color: #f9f9f9;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .icon-buttons {
+  position: absolute; 
+  left: 0;
+  bottom: 0;
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+  justify-content: space-between; 
+  padding: 0 20px 20px 20px; 
 }
 
+
 .icon-button {
-  position: relative;
+  position: relative; 
   background-color: #176bb5;
   border: none;
   color: white;
@@ -141,6 +148,7 @@ export default {
   width: 45px;
   height: 45px;
 }
+
 
 .icon-button:hover .tooltip {
   opacity: 1;
